@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriSync — your plate, in balance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="grain"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">●</span>
+      <span class="brand-name">NutriSync</span>
+    </div>
+    <div class="topbar-date" id="today-date"></div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- HERO: the plate -->
+    <section class="hero">
+      <div class="hero-text">
+        <p class="eyebrow">today's plate</p>
+        <h1>Balance,<br>not perfection.</h1>
+        <p class="hero-sub">Log what you eat. Watch your plate fill in. No guilt, just the picture.</p>
+      </div>
+
+      <div class="plate-wrap">
+        <svg class="plate" viewBox="0 0 320 320" aria-hidden="true">
+          <!-- plate rim -->
+          <circle cx="160" cy="160" r="150" class="plate-rim" />
+          <circle cx="160" cy="160" r="150" class="plate-track" />
+          <!-- macro arcs drawn by JS -->
+          <g id="plate-arcs" transform="rotate(-90 160 160)"></g>
+          <circle cx="160" cy="160" r="88" class="plate-well" />
+        </svg>
+        <div class="plate-center">
+          <span class="plate-cal" id="cal-total">0</span>
+          <span class="plate-cal-label">of <span id="cal-goal">2000</span> cal</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- MACRO LEGEND -->
+    <section class="macros" id="macro-legend">
+      <!-- filled by JS -->
+    </section>
+
+    <!-- QUICK ADD -->
+    <section class="panel add-panel">
+      <h2>Add something</h2>
+      <form id="add-form" class="add-form">
+        <div class="field field-name">
+          <label for="food-name">Food</label>
+          <input type="text" id="food-name" placeholder="e.g. Greek yogurt bowl" required>
+        </div>
+        <div class="field">
+          <label for="food-cal">Calories</label>
+          <input type="number" id="food-cal" min="0" placeholder="0" required>
+        </div>
+        <div class="field">
+          <label for="food-protein">Protein (g)</label>
+          <input type="number" id="food-protein" min="0" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="food-carbs">Carbs (g)</label>
+          <input type="number" id="food-carbs" min="0" placeholder="0">
+        </div>
+        <div class="field">
+          <label for="food-fat">Fat (g)</label>
+          <input type="number" id="food-fat" min="0" placeholder="0">
+        </div>
+        <button type="submit" class="btn-add">Add to plate</button>
+      </form>
+    </section>
+
+    <!-- LOG -->
+    <section class="panel log-panel">
+      <div class="log-header">
+        <h2>Today's log</h2>
+        <button id="clear-day" class="btn-ghost">Clear day</button>
+      </div>
+      <ul id="log-list" class="log-list">
+        <!-- entries injected here -->
+      </ul>
+      <p id="log-empty" class="log-empty">Nothing logged yet — your plate is waiting.</p>
+    </section>
+
+    <!-- GOALS -->
+    <section class="panel goals-panel">
+      <h2>Your daily goals</h2>
+      <form id="goals-form" class="goals-form">
+        <div class="field">
+          <label for="goal-cal">Calories</label>
+          <input type="number" id="goal-cal" min="0">
+        </div>
+        <div class="field">
+          <label for="goal-protein">Protein (g)</label>
+          <input type="number" id="goal-protein" min="0">
+        </div>
+        <div class="field">
+          <label for="goal-carbs">Carbs (g)</label>
+          <input type="number" id="goal-carbs" min="0">
+        </div>
+        <div class="field">
+          <label for="goal-fat">Fat (g)</label>
+          <input type="number" id="goal-fat" min="0">
+        </div>
+        <button type="submit" class="btn-add btn-secondary">Save goals</button>
+      </form>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <p>NutriSync — built by you, for you. Your data stays on this device.</p>
+  </footer>
+
+<script src="app.js"></script>
+</body>
+</html>
