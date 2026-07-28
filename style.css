@@ -257,6 +257,57 @@ body {
 }
 .field-name { grid-column: span 1; }
 
+.save-check {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  margin-top: 2px;
+}
+.save-check input { accent-color: var(--matcha); width: 15px; height: 15px; }
+
+.saved-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.saved-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--matcha-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 8px 8px 16px;
+  font-size: 13px;
+}
+.saved-chip-name { font-weight: 500; }
+.saved-chip-cal { font-family: var(--font-mono); color: var(--ink-soft); font-size: 12px; }
+.saved-chip-add {
+  background: var(--matcha);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.saved-chip-add:hover { background: #3d6444; }
+.saved-chip-remove {
+  background: none;
+  border: none;
+  color: var(--ink-soft);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.saved-chip-remove:hover { color: var(--berry); }
+
 .btn-add {
   grid-column: 1 / -1;
   background: var(--matcha);

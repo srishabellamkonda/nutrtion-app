@@ -75,8 +75,19 @@
           <label for="food-fat">Fat (g)</label>
           <input type="number" id="food-fat" min="0" placeholder="0">
         </div>
+        <label class="save-check">
+          <input type="checkbox" id="food-save">
+          Save this meal so I can add it again with one click
+        </label>
         <button type="submit" class="btn-add">Add to plate</button>
       </form>
+    </section>
+
+    <!-- SAVED MEALS -->
+    <section class="panel saved-panel">
+      <h2>Saved meals</h2>
+      <div id="saved-list" class="saved-list"></div>
+      <p id="saved-empty" class="log-empty">No saved meals yet — check the box above when you add one.</p>
     </section>
 
     <!-- LOG -->

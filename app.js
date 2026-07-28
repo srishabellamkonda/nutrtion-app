@@ -19,7 +19,8 @@ function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
   const defaultState = {
     goals: { cal: 2000, protein: 120, carbs: 220, fat: 65 },
-    days: {} // { '2026-07-27': [ {name, cal, protein, carbs, fat}, ... ] }
+    days: {}, // { '2026-07-27': [ {name, cal, protein, carbs, fat}, ... ] }
+    savedMeals: [] // [ {name, cal, protein, carbs, fat}, ... ]
   };
   if (!raw) return defaultState;
   try {
@@ -152,9 +153,52 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// ---------- render: saved meals ----------
+function renderSavedMeals() {
+  const container = document.getElementById('saved-list');
+  const emptyMsg = document.getElementById('saved-empty');
+  container.innerHTML = '';
+
+  if (!state.savedMeals.length) {
+    emptyMsg.style.display = 'block';
+    return;
+  }
+  emptyMsg.style.display = 'none';
+
+  state.savedMeals.forEach((meal, index) => {
+    const chip = document.createElement('div');
+    chip.className = 'saved-chip';
+    chip.innerHTML = `
+      <span class="saved-chip-name">${escapeHtml(meal.name)}</span>
+      <span class="saved-chip-cal">${meal.cal} cal</span>
+      <button class="saved-chip-add" data-index="${index}" aria-label="Add ${escapeHtml(meal.name)} to today">+</button>
+      <button class="saved-chip-remove" data-index="${index}" aria-label="Delete saved meal ${escapeHtml(meal.name)}">×</button>
+    `;
+    container.appendChild(chip);
+  });
+
+  container.querySelectorAll('.saved-chip-add').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const meal = state.savedMeals[Number(btn.dataset.index)];
+      getTodayEntries().push({ ...meal });
+      saveState();
+      renderAll();
+    });
+  });
+
+  container.querySelectorAll('.saved-chip-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.savedMeals.splice(Number(btn.dataset.index), 1);
+      saveState();
+      renderAll();
+    });
+  });
+}
+
 function renderAll() {
   renderPlate();
   renderLog();
+  renderSavedMeals();
 }
 
 // ---------- add food form ----------
@@ -168,7 +212,15 @@ document.getElementById('add-form').addEventListener('submit', (e) => {
 
   if (!name || cal <= 0) return;
 
-  getTodayEntries().push({ name, cal, protein, carbs, fat });
+  const newEntry = { name, cal, protein, carbs, fat };
+  getTodayEntries().push(newEntry);
+
+  const saveMeal = document.getElementById('food-save').checked;
+  if (saveMeal) {
+    const alreadySaved = state.savedMeals.some(m => m.name.toLowerCase() === name.toLowerCase());
+    if (!alreadySaved) state.savedMeals.push({ ...newEntry });
+  }
+
   saveState();
   renderAll();
 
