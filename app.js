@@ -1,41 +1,39 @@
 // ============================================
 // NutriSync — app logic
-// Data persists in localStorage, per device.
+// NOTE: this preview keeps everything in memory (no localStorage),
+// because files opened as an in-chat preview can't use browser storage.
+// See the message below the file list for what that means for you.
 // ============================================
 
-const STORAGE_KEY = 'nutrisync_state_v1';
 const RADIUS = 150;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 const MACROS = [
-  { key: 'protein', label: 'Protein', color: 'var(--matcha)', hex: '#4B7752', calPerGram: 4 },
-  { key: 'carbs',   label: 'Carbs',   color: 'var(--citrus)', hex: '#E8873A', calPerGram: 4 },
-  { key: 'fat',     label: 'Fat',     color: 'var(--berry)',  hex: '#A8456B', calPerGram: 9 },
+  { key: 'protein', label: 'Protein', hex: '#4B7752', calPerGram: 4 },
+  { key: 'carbs',   label: 'Carbs',   hex: '#E8873A', calPerGram: 4 },
+  { key: 'fat',     label: 'Fat',     hex: '#A8456B', calPerGram: 9 },
 ];
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
-function loadState() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  const defaultState = {
-    goals: { cal: 2000, protein: 120, carbs: 220, fat: 65 },
-    days: {}, // { '2026-07-27': [ {name, cal, protein, carbs, fat}, ... ] }
-    savedMeals: [] // [ {name, cal, protein, carbs, fat}, ... ]
-  };
-  if (!raw) return defaultState;
-  try {
-    const parsed = JSON.parse(raw);
-    return { ...defaultState, ...parsed, goals: { ...defaultState.goals, ...(parsed.goals || {}) } };
-  } catch {
-    return defaultState;
-  }
-}
+let state = {
+  goals: { cal: 2000, protein: 120, carbs: 220, fat: 65 },
+  days: {},          // { '2026-07-28': [ {name, cal, protein, carbs, fat}, ... ] }
+  savedMeals: [],
+  goalType: 'lose',  // lose | gain | maintain | muscle
+  isAdmin: false,
+};
 
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-let state = loadState();
+const foodDb = [
+  { name: 'Chicken breast (4oz)', cal: 185, protein: 35, carbs: 0, fat: 4 },
+  { name: 'Brown rice (1 cup)', cal: 216, protein: 5, carbs: 45, fat: 2 },
+  { name: 'Avocado (half)', cal: 120, protein: 1, carbs: 6, fat: 11 },
+  { name: 'Greek yogurt (1 cup)', cal: 150, protein: 20, carbs: 9, fat: 4 },
+  { name: 'Almonds (1oz)', cal: 164, protein: 6, carbs: 6, fat: 14 },
+  { name: 'Banana', cal: 105, protein: 1, carbs: 27, fat: 0 },
+  { name: 'Oats (1 cup cooked)', cal: 158, protein: 6, carbs: 27, fat: 3 },
+  { name: 'Salmon (4oz)', cal: 233, protein: 25, carbs: 0, fat: 14 },
+];
 
 function getTodayEntries() {
   const key = todayKey();
@@ -43,12 +41,137 @@ function getTodayEntries() {
   return state.days[key];
 }
 
-// ---------- date display ----------
-document.getElementById('today-date').textContent = new Date().toLocaleDateString(undefined, {
-  weekday: 'long', month: 'long', day: 'numeric'
-});
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
 
-// ---------- render: plate ----------
+// ============================================
+// AUTH
+// ============================================
+let isSignup = false;
+function toggleAuthMode() {
+  isSignup = !isSignup;
+  document.getElementById('login-form').style.display = isSignup ? 'none' : 'block';
+  document.getElementById('signup-form').style.display = isSignup ? 'block' : 'none';
+  document.getElementById('auth-subtitle').textContent = isSignup ? 'Create your account to get started.' : 'Log in to see your plate.';
+}
+function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  state.isAdmin = email.toLowerCase().includes('admin');
+  enterApp();
+}
+function handleSignup() {
+  const name = document.getElementById('signup-name').value.trim();
+  document.getElementById('ob-name').value = name;
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('onboarding-screen').style.display = 'flex';
+}
+function logOut() {
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+}
+
+// ============================================
+// ONBOARDING
+// ============================================
+let onboardStep = 1;
+let obGender = 'female';
+
+function selectGender(g, el) {
+  obGender = g;
+  document.querySelectorAll('.gender-row button').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function selectGoal(g, el) {
+  state.goalType = g;
+  document.querySelectorAll('.goal-opt').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function obNext() {
+  if (onboardStep < 4) {
+    document.getElementById('step-' + onboardStep).style.display = 'none';
+    onboardStep++;
+    document.getElementById('step-' + onboardStep).style.display = 'block';
+    document.getElementById('ob-back').style.visibility = 'visible';
+    for (let i = 1; i <= 4; i++) document.getElementById('dot' + i).classList.toggle('done', i < onboardStep + 1);
+    if (onboardStep === 4) {
+      computePlan();
+      document.getElementById('ob-next').textContent = 'Start tracking';
+    }
+  } else {
+    enterApp();
+  }
+}
+function obBack() {
+  if (onboardStep > 1) {
+    document.getElementById('step-' + onboardStep).style.display = 'none';
+    onboardStep--;
+    document.getElementById('step-' + onboardStep).style.display = 'block';
+    document.getElementById('ob-next').textContent = 'Continue';
+    if (onboardStep === 1) document.getElementById('ob-back').style.visibility = 'hidden';
+  }
+}
+function computePlan() {
+  const weight = parseFloat(document.getElementById('ob-weight').value) || 150;
+  const cals = parseFloat(document.getElementById('ob-cals').value) || 2000;
+  let target = cals;
+  if (state.goalType === 'lose') target = Math.max(1200, cals - 500);
+  if (state.goalType === 'gain' || state.goalType === 'muscle') target = cals + 300;
+  target = Math.round(target);
+
+  const protein = Math.round(state.goalType === 'muscle' ? weight * 1.0 : weight * 0.7);
+  const fat = Math.round((target * 0.28) / 9);
+  const carbs = Math.round((target - protein * 4 - fat * 9) / 4);
+
+  state.goals = { cal: target, protein, carbs, fat };
+
+  document.getElementById('ob-summary-cals').textContent = target.toLocaleString() + ' cal / day';
+  document.getElementById('ob-summary-macros').innerHTML =
+    `Protein ${protein}g &nbsp;·&nbsp; Carbs ${carbs}g &nbsp;·&nbsp; Fat ${fat}g`;
+}
+
+function enterApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('onboarding-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'block';
+
+  if (state.isAdmin) {
+    document.getElementById('admin-badge').style.display = 'inline-block';
+    document.getElementById('admin-panel').style.display = 'block';
+  }
+
+  document.getElementById('today-date').textContent = new Date().toLocaleDateString(undefined, {
+    weekday: 'long', month: 'long', day: 'numeric'
+  });
+
+  fillGoalsForm();
+  renderAll();
+  renderGoalGuidance();
+  renderFoodDb();
+  renderLeaderboard();
+  renderPartners();
+}
+
+// ============================================
+// SIDEBAR NAV
+// ============================================
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+function goPage(p) {
+  document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-' + p).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.nav-item[data-page="${p}"]`).classList.add('active');
+  toggleSidebar();
+}
+
+// ============================================
+// PLATE / TRACKER (kept from original)
+// ============================================
 function renderPlate() {
   const entries = getTodayEntries();
   const totals = entries.reduce((acc, e) => {
@@ -62,14 +185,12 @@ function renderPlate() {
   document.getElementById('cal-total').textContent = Math.round(totals.cal);
   document.getElementById('cal-goal').textContent = state.goals.cal;
 
-  // macro calorie contributions, used to segment the plate ring
   const macroCals = MACROS.map(m => (Number(totals[m.key]) || 0) * m.calPerGram);
   const macroCalSum = macroCals.reduce((a, b) => a + b, 0);
 
   const arcsGroup = document.getElementById('plate-arcs');
   arcsGroup.innerHTML = '';
 
-  // total fill = min(total cal / goal, 1) of the ring, split proportionally among macros
   const fillFraction = state.goals.cal > 0 ? Math.min(totals.cal / state.goals.cal, 1) : 0;
   let offsetSoFar = 0;
 
@@ -90,7 +211,6 @@ function renderPlate() {
   renderMacroLegend(totals);
 }
 
-// ---------- render: macro legend ----------
 function renderMacroLegend(totals) {
   const container = document.getElementById('macro-legend');
   container.innerHTML = '';
@@ -102,20 +222,14 @@ function renderMacroLegend(totals) {
     const card = document.createElement('div');
     card.className = 'macro-card';
     card.innerHTML = `
-      <div class="macro-name">
-        <span class="macro-dot" style="background:${m.hex}"></span>
-        ${m.label}
-      </div>
+      <div class="macro-name"><span class="macro-dot" style="background:${m.hex}"></span>${m.label}</div>
       <div class="macro-value">${value}g <span class="macro-goal">/ ${goal}g</span></div>
-      <div class="macro-bar-track">
-        <div class="macro-bar-fill" style="width:${pct}%; background:${m.hex}"></div>
-      </div>
+      <div class="macro-bar-track"><div class="macro-bar-fill" style="width:${pct}%; background:${m.hex}"></div></div>
     `;
     container.appendChild(card);
   });
 }
 
-// ---------- render: log ----------
 function renderLog() {
   const entries = getTodayEntries();
   const list = document.getElementById('log-list');
@@ -137,23 +251,17 @@ function renderLog() {
     list.appendChild(li);
   });
 
+  document.getElementById('log-empty').style.display = entries.length ? 'none' : 'block';
+
   list.querySelectorAll('.log-item-remove').forEach(btn => {
     btn.addEventListener('click', () => {
       const idx = Number(btn.dataset.index);
       entries.splice(idx, 1);
-      saveState();
       renderAll();
     });
   });
 }
 
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-// ---------- render: saved meals ----------
 function renderSavedMeals() {
   const container = document.getElementById('saved-list');
   const emptyMsg = document.getElementById('saved-empty');
@@ -181,7 +289,6 @@ function renderSavedMeals() {
     btn.addEventListener('click', () => {
       const meal = state.savedMeals[Number(btn.dataset.index)];
       getTodayEntries().push({ ...meal });
-      saveState();
       renderAll();
     });
   });
@@ -189,7 +296,6 @@ function renderSavedMeals() {
   container.querySelectorAll('.saved-chip-remove').forEach(btn => {
     btn.addEventListener('click', () => {
       state.savedMeals.splice(Number(btn.dataset.index), 1);
-      saveState();
       renderAll();
     });
   });
@@ -201,7 +307,6 @@ function renderAll() {
   renderSavedMeals();
 }
 
-// ---------- add food form ----------
 document.getElementById('add-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const name = document.getElementById('food-name').value.trim();
@@ -215,35 +320,31 @@ document.getElementById('add-form').addEventListener('submit', (e) => {
   const newEntry = { name, cal, protein, carbs, fat };
   getTodayEntries().push(newEntry);
 
-  const saveMeal = document.getElementById('food-save').checked;
-  if (saveMeal) {
+  if (document.getElementById('food-save').checked) {
     const alreadySaved = state.savedMeals.some(m => m.name.toLowerCase() === name.toLowerCase());
     if (!alreadySaved) state.savedMeals.push({ ...newEntry });
   }
 
-  saveState();
   renderAll();
-
   e.target.reset();
   document.getElementById('food-name').focus();
 });
 
-// ---------- clear day ----------
 document.getElementById('clear-day').addEventListener('click', () => {
   if (!confirm('Clear everything logged today?')) return;
   state.days[todayKey()] = [];
-  saveState();
   renderAll();
 });
 
-// ---------- goals form ----------
+// ============================================
+// GOALS & SETTINGS
+// ============================================
 function fillGoalsForm() {
   document.getElementById('goal-cal').value = state.goals.cal;
   document.getElementById('goal-protein').value = state.goals.protein;
   document.getElementById('goal-carbs').value = state.goals.carbs;
   document.getElementById('goal-fat').value = state.goals.fat;
 }
-
 document.getElementById('goals-form').addEventListener('submit', (e) => {
   e.preventDefault();
   state.goals = {
@@ -252,10 +353,77 @@ document.getElementById('goals-form').addEventListener('submit', (e) => {
     carbs: Number(document.getElementById('goal-carbs').value) || 0,
     fat: Number(document.getElementById('goal-fat').value) || 0,
   };
-  saveState();
   renderAll();
 });
 
-// ---------- init ----------
-fillGoalsForm();
-renderAll();
+function renderGoalGuidance() {
+  const guidance = {
+    lose: 'A moderate calorie deficit paired with steady protein keeps you full while losing weight sustainably.',
+    gain: 'A calorie surplus with balanced carbs and fat supports steady, healthy weight gain.',
+    maintain: 'Match your intake to your output — consistency matters more than precision here.',
+    muscle: 'Higher protein plus a slight surplus gives your body what it needs to build muscle.',
+  };
+  const foods = {
+    lose: ['Leafy greens', 'Grilled chicken', 'Greek yogurt', 'Berries', 'Lentils'],
+    gain: ['Nut butters', 'Whole milk', 'Oats', 'Avocado', 'Salmon'],
+    maintain: ['Whole grains', 'Mixed vegetables', 'Lean protein', 'Olive oil'],
+    muscle: ['Chicken breast', 'Eggs', 'Cottage cheese', 'Quinoa', 'Salmon'],
+  };
+  document.getElementById('goal-guidance').textContent = guidance[state.goalType] || guidance.lose;
+  document.getElementById('goal-food-pills').innerHTML =
+    (foods[state.goalType] || foods.lose).map(f => `<span class="pill">${f}</span>`).join('');
+}
+
+// ============================================
+// FOOD DATABASE
+// ============================================
+function renderFoodDb(filter = '') {
+  const list = document.getElementById('food-db-list');
+  const items = foodDb.filter(f => f.name.toLowerCase().includes(filter.toLowerCase()));
+  list.innerHTML = items.map((f, i) => `
+    <li class="log-item">
+      <div><div class="log-item-name">${escapeHtml(f.name)}</div><div class="log-item-macros">P ${f.protein}g · C ${f.carbs}g · F ${f.fat}g</div></div>
+      <div class="log-item-right">
+        <span class="log-item-cal">${f.cal} cal</span>
+        <button class="log-item-remove" style="font-size:15px;" title="Log this" onclick="logDbFood(${i}, '${filter.replace(/'/g, "\\'")}')">＋</button>
+      </div>
+    </li>`).join('');
+}
+function filterFoodDb(v) { renderFoodDb(v); }
+function logDbFood(i, filter) {
+  const items = foodDb.filter(f => f.name.toLowerCase().includes((filter || '').toLowerCase()));
+  getTodayEntries().push({ ...items[i] });
+  renderAll();
+  alert('Added to today\'s log');
+}
+
+// ============================================
+// ACCOUNTABILITY (mock data — no real backend)
+// ============================================
+function renderLeaderboard() {
+  const data = [
+    { name: 'you', streak: 24, you: true },
+    { name: 'sam_runs', streak: 18 },
+    { name: 'priya_k', streak: 15 },
+    { name: 'maya_g', streak: 11 },
+    { name: 'theo_b', streak: 9 },
+  ];
+  document.getElementById('leaderboard-list').innerHTML = data.map((d, i) => `
+    <div class="leader-row ${d.you ? 'partner' : ''}">
+      <div class="rank">${i + 1}</div>
+      <div class="avatar-sm">${d.name[0].toUpperCase()}</div>
+      <div style="flex:1; font-weight:600; font-size:13.5px;">${d.name}${d.you ? ' (you)' : ''}</div>
+      <div style="font-size:12px; color:var(--ink-soft); font-family:var(--font-mono);">🔥 ${d.streak}d</div>
+    </div>`).join('');
+}
+function renderPartners() {
+  const partners = ['sam_runs', 'priya_k'];
+  const rows = partners.map(p => `
+    <div class="leader-row">
+      <div class="avatar-sm">${p[0].toUpperCase()}</div>
+      <div style="flex:1; font-weight:600; font-size:13.5px;">${p}</div>
+      <div style="font-size:12px; color:var(--ink-soft);">On goal today ✅</div>
+    </div>`).join('');
+  document.getElementById('partner-list').innerHTML = rows;
+  document.getElementById('account-partner-mgmt').innerHTML = rows;
+}
