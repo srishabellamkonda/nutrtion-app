@@ -166,17 +166,13 @@
     <div class="page" id="page-progress">
       <h1 class="page-title">Progress & History</h1>
       <div class="panel">
-        <h3>Weight trend</h3>
-        <svg width="100%" height="110" viewBox="0 0 300 110" preserveAspectRatio="none">
-          <polyline points="0,75 40,70 80,73 120,60 160,55 200,46 240,42 300,32" fill="none" stroke="#4B7752" stroke-width="3"/>
-        </svg>
-        <p style="font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); margin-top:8px;">Last 8 weeks · trending toward goal</p>
+        <h3>Your streak</h3>
+        <div id="progress-streak"></div>
       </div>
       <div class="panel">
-        <h3>Streaks</h3>
-        <span class="pill">🔥 12-day streak</span>
-        <span class="pill">Best: 21 days</span>
-        <span class="pill">On-goal days: 26 / 30</span>
+        <h3>Day-by-day history</h3>
+        <div id="progress-history"></div>
+        <p id="progress-empty" class="log-empty">You haven't logged anything yet. Once you track a few days, they'll show up here.</p>
       </div>
     </div>
 
@@ -226,23 +222,20 @@
     <div class="page" id="page-accountability">
       <h1 class="page-title">Accountability</h1>
       <div class="panel">
-        <h3>Top streaks</h3>
-        <div class="podium-row">
-          <div class="podium-col second"><div class="avatar">S</div><div class="bar"></div><div class="name">sam_runs</div><div class="streak">18d</div></div>
-          <div class="podium-col first"><div class="avatar">Y<span class="crown">👑</span></div><div class="bar"></div><div class="name">you</div><div class="streak">24d</div></div>
-          <div class="podium-col third"><div class="avatar">P</div><div class="bar"></div><div class="name">priya_k</div><div class="streak">15d</div></div>
-        </div>
+        <h3>Your streak</h3>
         <div id="leaderboard-list"></div>
+        <p style="font-size:12px; color:var(--ink-soft); margin:10px 0 0;">This will show your accountability partners here too, once you add some — ranked by streak.</p>
       </div>
       <div class="panel">
         <h3>Your accountability group</h3>
         <div id="partner-list"></div>
-        <button class="btn-add" style="margin-top:12px;" onclick="alert('Invite sent (demo)')">+ Invite a partner</button>
+        <p id="partner-empty" class="log-empty">No accountability partners yet — invite a friend to get started.</p>
+        <button class="btn-add" style="margin-top:12px;" onclick="alert('Sending invites needs a real account system behind it — this button is just a placeholder for now.')">+ Invite a partner</button>
       </div>
       <div class="panel">
         <div class="set-row" style="border-top:none;">
-          <div><div class="lbl">Link streaks with this group</div><div class="desc">If one of you misses your goal, everyone's streak resets. Recommended.</div></div>
-          <button class="toggle on" onclick="this.classList.toggle('on')"><div class="knob"></div></button>
+          <div><div class="lbl">Link streaks with this group</div><div class="desc">If one of you misses your goal, everyone's streak resets. Recommended once you have partners.</div></div>
+          <button class="toggle" onclick="this.classList.toggle('on')"><div class="knob"></div></button>
         </div>
       </div>
     </div>
@@ -263,9 +256,10 @@
       </div>
       <div class="panel" id="admin-panel" style="display:none;">
         <h3>Admin panel</h3>
-        <div class="stat-row"><div><div class="lbl">Total users</div><div class="desc">Signed up all-time</div></div><div class="val">1,204</div></div>
-        <div class="stat-row"><div><div class="lbl">Active today</div><div class="desc">Logged in within 24h</div></div><div class="val">318</div></div>
-        <div class="stat-row"><div><div class="lbl">Logins this week</div><div class="desc">Across all users</div></div><div class="val">2,940</div></div>
+        <p style="font-size:12px; color:var(--ink-soft); margin:0 0 12px;">There's no real backend yet, so this only reflects this one session — not actual signed-up users.</p>
+        <div class="stat-row"><div><div class="lbl">Total users</div><div class="desc">Signed up all-time</div></div><div class="val">1</div></div>
+        <div class="stat-row"><div><div class="lbl">Active today</div><div class="desc">Logged in within 24h</div></div><div class="val">1</div></div>
+        <div class="stat-row"><div><div class="lbl">Logins this week</div><div class="desc">Across all users</div></div><div class="val">1</div></div>
       </div>
       <div class="panel">
         <button class="btn-primary btn-danger" onclick="logOut()">Log out</button>

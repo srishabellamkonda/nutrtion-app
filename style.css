@@ -32,6 +32,11 @@
 
 * { box-sizing: border-box; }
 
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   background: var(--base);
@@ -326,9 +331,13 @@ input, select { font-family: inherit; }
 }
 
 .add-form, .goals-form {
-  display: grid; grid-template-columns: 2fr repeat(4, 1fr); gap: 12px; align-items: end;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  align-items: end;
 }
-.goals-form { grid-template-columns: repeat(4, 1fr); }
+.field { min-width: 0; }
+.field input { width: 100%; min-width: 0; }
 .field-name { grid-column: span 1; }
 .save-check {
   grid-column: 1 / -1; display: flex; align-items: center; gap: 8px;

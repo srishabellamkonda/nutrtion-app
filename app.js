@@ -22,6 +22,8 @@ let state = {
   savedMeals: [],
   goalType: 'lose',  // lose | gain | maintain | muscle
   isAdmin: false,
+  displayName: 'you',
+  accountabilityPartners: [], // starts empty — nobody is added until a real account system exists
 };
 
 const foodDb = [
@@ -150,7 +152,6 @@ function enterApp() {
   renderAll();
   renderGoalGuidance();
   renderFoodDb();
-  renderLeaderboard();
   renderPartners();
 }
 
@@ -305,6 +306,8 @@ function renderAll() {
   renderPlate();
   renderLog();
   renderSavedMeals();
+  renderProgress();
+  renderLeaderboard();
 }
 
 document.getElementById('add-form').addEventListener('submit', (e) => {
@@ -398,32 +401,101 @@ function logDbFood(i, filter) {
 }
 
 // ============================================
-// ACCOUNTABILITY (mock data — no real backend)
+// ACCOUNTABILITY — real data only.
+// state.accountabilityPartners starts empty. There's no account
+// system behind "Invite a partner" yet, so it can't add anyone for
+// real — nothing here is invented to make it look populated.
 // ============================================
+const CALORIE_BUFFER = 50;
+
+function computeStreak() {
+  const dates = Object.keys(state.days);
+  if (!dates.length) return 0;
+  let streak = 0;
+  let d = new Date();
+  while (true) {
+    const key = d.toISOString().slice(0, 10);
+    const entries = state.days[key];
+    if (!entries || entries.length === 0) break;
+    const totalCal = entries.reduce((s, e) => s + (Number(e.cal) || 0), 0);
+    const goalCal = state.goals.cal;
+    let onGoal;
+    if (state.goalType === 'lose') onGoal = totalCal <= goalCal + CALORIE_BUFFER;
+    else if (state.goalType === 'gain' || state.goalType === 'muscle') onGoal = totalCal >= goalCal - CALORIE_BUFFER;
+    else onGoal = Math.abs(totalCal - goalCal) <= CALORIE_BUFFER;
+    if (!onGoal) break;
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
 function renderLeaderboard() {
-  const data = [
-    { name: 'you', streak: 24, you: true },
-    { name: 'sam_runs', streak: 18 },
-    { name: 'priya_k', streak: 15 },
-    { name: 'maya_g', streak: 11 },
-    { name: 'theo_b', streak: 9 },
-  ];
-  document.getElementById('leaderboard-list').innerHTML = data.map((d, i) => `
+  const streak = computeStreak();
+  const rows = [{ name: state.displayName || 'you', streak, you: true }, ...state.accountabilityPartners];
+  rows.sort((a, b) => b.streak - a.streak);
+  document.getElementById('leaderboard-list').innerHTML = rows.map((d, i) => `
     <div class="leader-row ${d.you ? 'partner' : ''}">
       <div class="rank">${i + 1}</div>
       <div class="avatar-sm">${d.name[0].toUpperCase()}</div>
-      <div style="flex:1; font-weight:600; font-size:13.5px;">${d.name}${d.you ? ' (you)' : ''}</div>
+      <div style="flex:1; font-weight:600; font-size:13.5px;">${escapeHtml(d.name)}${d.you ? ' (you)' : ''}</div>
       <div style="font-size:12px; color:var(--ink-soft); font-family:var(--font-mono);">🔥 ${d.streak}d</div>
     </div>`).join('');
 }
+
 function renderPartners() {
-  const partners = ['sam_runs', 'priya_k'];
+  const partners = state.accountabilityPartners;
+  const listEl = document.getElementById('partner-list');
+  const emptyEl = document.getElementById('partner-empty');
+  const mgmtEl = document.getElementById('account-partner-mgmt');
+
+  if (!partners.length) {
+    listEl.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'block';
+    mgmtEl.innerHTML = '<p class="log-empty" style="padding:0;">No partners yet.</p>';
+    return;
+  }
+  if (emptyEl) emptyEl.style.display = 'none';
+
   const rows = partners.map(p => `
     <div class="leader-row">
-      <div class="avatar-sm">${p[0].toUpperCase()}</div>
-      <div style="flex:1; font-weight:600; font-size:13.5px;">${p}</div>
-      <div style="font-size:12px; color:var(--ink-soft);">On goal today ✅</div>
+      <div class="avatar-sm">${p.name[0].toUpperCase()}</div>
+      <div style="flex:1; font-weight:600; font-size:13.5px;">${escapeHtml(p.name)}</div>
+      <div style="font-size:12px; color:var(--ink-soft); font-family:var(--font-mono);">🔥 ${p.streak}d</div>
     </div>`).join('');
-  document.getElementById('partner-list').innerHTML = rows;
-  document.getElementById('account-partner-mgmt').innerHTML = rows;
+  listEl.innerHTML = rows;
+  mgmtEl.innerHTML = rows;
+}
+
+// ============================================
+// PROGRESS & HISTORY — real data only
+// ============================================
+function renderProgress() {
+  const streak = computeStreak();
+  document.getElementById('progress-streak').innerHTML =
+    streak > 0
+      ? `<span class="pill">🔥 ${streak}-day streak</span>`
+      : `<p class="log-empty" style="padding:4px 0;">No streak yet — hit your calorie goal today to start one.</p>`;
+
+  const dates = Object.keys(state.days).sort().reverse();
+  const historyEl = document.getElementById('progress-history');
+  const emptyEl = document.getElementById('progress-empty');
+
+  if (!dates.length) {
+    historyEl.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  historyEl.innerHTML = dates.map(key => {
+    const entries = state.days[key];
+    const totalCal = entries.reduce((s, e) => s + (Number(e.cal) || 0), 0);
+    const label = new Date(key + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return `
+      <div class="log-item">
+        <div class="log-item-name">${label}</div>
+        <div class="log-item-cal">${Math.round(totalCal)} / ${state.goals.cal} cal</div>
+      </div>`;
+  }).join('');
 }
