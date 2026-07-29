@@ -1,9 +1,21 @@
 // ============================================
 // NutriSync — app logic
-// NOTE: this preview keeps everything in memory (no localStorage),
-// because files opened as an in-chat preview can't use browser storage.
-// See the message below the file list for what that means for you.
+// Food logs/saved meals still live in memory only for now (that part
+// isn't connected to the database yet). Accounts, login, and profile
+// info (name, goals, admin role) ARE real now, via Supabase.
 // ============================================
+
+const SUPABASE_URL = 'https://eltglwdtdmzyhcoduwzf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_M3WjnaTU45PmzyUC5Fe68Q_Se1Q_BKS';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null; // the logged-in Supabase user, once signed in
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
 
 const RADIUS = 150;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
@@ -50,30 +62,104 @@ function escapeHtml(str) {
 }
 
 // ============================================
-// AUTH
+// AUTH — real Supabase accounts
 // ============================================
 let isSignup = false;
 function toggleAuthMode() {
   isSignup = !isSignup;
+  showAuthError('');
   document.getElementById('login-form').style.display = isSignup ? 'none' : 'block';
   document.getElementById('signup-form').style.display = isSignup ? 'block' : 'none';
   document.getElementById('auth-subtitle').textContent = isSignup ? 'Create your account to get started.' : 'Log in to see your plate.';
 }
-function handleLogin() {
+
+async function handleLogin() {
+  showAuthError('');
   const email = document.getElementById('login-email').value.trim();
-  state.isAdmin = email.toLowerCase().includes('admin');
-  enterApp();
+  const password = document.getElementById('login-pass').value;
+  if (!email || !password) { showAuthError('Enter your email and password.'); return; }
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    if (error.message.toLowerCase().includes('invalid login credentials')) {
+      showAuthError('Account not found. Please sign up.');
+    } else {
+      showAuthError(error.message);
+    }
+    return;
+  }
+  currentUser = data.user;
+  await loadProfileAndEnter();
 }
-function handleSignup() {
+
+async function handleSignup() {
+  showAuthError('');
   const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-pass').value;
+  if (!name || !email || !password) { showAuthError('Fill in your name, email, and password.'); return; }
+  if (password.length < 6) { showAuthError('Password needs to be at least 6 characters.'); return; }
+
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if (error) { showAuthError(error.message); return; }
+  currentUser = data.user;
+
   document.getElementById('ob-name').value = name;
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('onboarding-screen').style.display = 'flex';
 }
-function logOut() {
+
+async function logOut() {
+  await sb.auth.signOut();
+  currentUser = null;
   document.getElementById('app-shell').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
 }
+
+// A profile with no real_name yet means onboarding was never finished.
+async function loadProfileAndEnter() {
+  const { data: profile, error } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('id', currentUser.id)
+    .single();
+
+  if (error || !profile) {
+    showAuthError('Could not load your profile. Try again in a moment.');
+    return;
+  }
+
+  if (!profile.real_name) {
+    // never finished onboarding
+    document.getElementById('ob-name').value = profile.display_name || '';
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('onboarding-screen').style.display = 'flex';
+    return;
+  }
+
+  applyProfile(profile);
+  enterApp();
+}
+
+function applyProfile(profile) {
+  state.displayName = profile.display_name || 'you';
+  state.goalType = profile.goal_type || 'maintain';
+  state.isAdmin = profile.role === 'admin';
+  state.goals = {
+    cal: profile.calorie_goal || 2000,
+    protein: profile.protein_goal || 120,
+    carbs: profile.carbs_goal || 220,
+    fat: profile.fat_goal || 65,
+  };
+}
+
+// If there's already a logged-in session (from last time), skip the login screen.
+sb.auth.getSession().then(async ({ data }) => {
+  if (data.session) {
+    currentUser = data.session.user;
+    await loadProfileAndEnter();
+  }
+});
 
 // ============================================
 // ONBOARDING
@@ -103,8 +189,34 @@ function obNext() {
       document.getElementById('ob-next').textContent = 'Start tracking';
     }
   } else {
-    enterApp();
+    finishOnboarding();
   }
+}
+
+async function finishOnboarding() {
+  const name = document.getElementById('ob-name').value.trim() || 'you';
+  const heightIn = parseFloat(document.getElementById('ob-height').value) || null;
+  const weightLb = parseFloat(document.getElementById('ob-weight').value) || null;
+
+  const { error } = await sb.from('profiles').update({
+    display_name: name,
+    real_name: name,
+    goal_type: state.goalType,
+    height_cm: heightIn ? Math.round(heightIn * 2.54 * 10) / 10 : null,
+    weight_kg: weightLb ? Math.round(weightLb * 0.453592 * 10) / 10 : null,
+    calorie_goal: state.goals.cal,
+    protein_goal: state.goals.protein,
+    carbs_goal: state.goals.carbs,
+    fat_goal: state.goals.fat,
+  }).eq('id', currentUser.id);
+
+  if (error) {
+    alert('Could not save your profile: ' + error.message);
+    return;
+  }
+
+  state.displayName = name;
+  enterApp();
 }
 function obBack() {
   if (onboardStep > 1) {
@@ -348,7 +460,8 @@ function fillGoalsForm() {
   document.getElementById('goal-carbs').value = state.goals.carbs;
   document.getElementById('goal-fat').value = state.goals.fat;
 }
-document.getElementById('goals-form').addEventListener('submit', (e) => {
+
+document.getElementById('goals-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   state.goals = {
     cal: Number(document.getElementById('goal-cal').value) || 0,
@@ -357,6 +470,14 @@ document.getElementById('goals-form').addEventListener('submit', (e) => {
     fat: Number(document.getElementById('goal-fat').value) || 0,
   };
   renderAll();
+  if (currentUser) {
+    await sb.from('profiles').update({
+      calorie_goal: state.goals.cal,
+      protein_goal: state.goals.protein,
+      carbs_goal: state.goals.carbs,
+      fat_goal: state.goals.fat,
+    }).eq('id', currentUser.id);
+  }
 });
 
 function renderGoalGuidance() {
