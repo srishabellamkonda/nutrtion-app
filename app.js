@@ -416,7 +416,7 @@ function computePlan() {
   // Rough timeline estimate, only when a target weight and a lose/gain
   // direction are both given. ~3,500 kcal ≈ 1 lb of body weight.
   const targetWeightRaw = parseFloat(document.getElementById('ob-target').value);
-  if (targetWeightRaw && (state.goalType === 'lose' || state.goalType === 'gain')) {
+  if (targetWeightRaw && (state.goalType === 'lose' || state.goalType === 'gain' || state.goalType === 'muscle')) {
     const targetKg = obTargetWeightUnit === 'kg' ? targetWeightRaw : targetWeightRaw * 0.453592;
     const weightDiffKg = Math.abs(weightKg - targetKg);
     const dailyDelta = Math.abs(maintenanceCals - target);
