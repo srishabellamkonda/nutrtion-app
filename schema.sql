@@ -64,6 +64,25 @@ drop policy if exists "profiles_update_own" on profiles;
 create policy "profiles_update_own" on profiles
   for update using (id = auth.uid()) with check (id = auth.uid());
 
+-- Lets a signed-in user create their OWN profile row if one doesn't already
+-- exist yet (self-heals onboarding even if the new-user trigger above was
+-- added after some accounts already existed, or ran into a timing issue).
+drop policy if exists "profiles_insert_own" on profiles;
+create policy "profiles_insert_own" on profiles
+  for insert with check (id = auth.uid());
+
+-- Lets the login screen tell "wrong password" apart from "no such account",
+-- without exposing anything beyond whether an email is registered.
+create or replace function public.email_exists(check_email text)
+returns boolean
+language sql
+security definer
+stable
+as $$
+  select exists (select 1 from profiles where lower(email) = lower(check_email));
+$$;
+grant execute on function public.email_exists to anon, authenticated;
+
 -- ---------- food_logs (each day's logged food, per user) ----------
 create table if not exists food_logs (
   id bigint generated always as identity primary key,
@@ -220,8 +239,9 @@ as $$
 $$;
 grant execute on function public.get_leaderboard to authenticated;
 
--- Add an accountability partner by email (creates a group on first use)
-create or replace function public.add_accountability_partner(friend_email text)
+-- Add an accountability partner by their display name / username
+-- (no email lookup — keeps this simple, with no email verification involved)
+create or replace function public.add_accountability_partner(friend_username text)
 returns text
 language plpgsql
 security definer
@@ -231,7 +251,7 @@ declare
   my_group_id bigint;
   member_count int;
 begin
-  select id into friend_id from profiles where lower(email) = lower(friend_email);
+  select id into friend_id from profiles where lower(display_name) = lower(friend_username) limit 1;
   if friend_id is null then return 'not_found'; end if;
   if friend_id = auth.uid() then return 'self'; end if;
 
@@ -308,4 +328,11 @@ grant execute on function public.get_admin_stats to authenticated;
 -- ============================================================
 -- To make yourself an admin, run this once with your own email:
 -- update profiles set role = 'admin' where email = 'you@example.com';
+--
+-- IMPORTANT — for new accounts to log straight in after signing up
+-- (no email confirmation step), go to:
+-- Supabase Dashboard -> Authentication -> Sign In / Providers -> Email
+-- and turn OFF "Confirm email". Without that, Supabase will not hand
+-- back an active session right after signUp, and the app has no way
+-- to "auto log in" someone whose email isn't confirmed yet.
 -- ============================================================

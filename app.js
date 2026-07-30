@@ -150,7 +150,13 @@ async function handleLogin() {
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) {
     if (error.message.toLowerCase().includes('invalid login credentials')) {
-      showAuthError('Account not found. Please sign up.');
+      // Supabase deliberately returns the same generic error for both a
+      // wrong password and a non-existent account (so nobody can use the
+      // login form to check which emails are registered). We ask a
+      // narrowly-scoped function whether the email exists at all, just to
+      // show the right message — it reveals nothing else about the account.
+      const { data: exists } = await sb.rpc('email_exists', { check_email: email });
+      showAuthError(exists ? 'Incorrect password. Please try again.' : 'Account not found. Please sign up.');
     } else {
       showAuthError(error.message);
     }
@@ -172,7 +178,22 @@ async function handleSignup() {
 
   const { data, error } = await sb.auth.signUp({ email, password });
   if (error) { showAuthError(error.message); return; }
-  currentUser = data.user;
+
+  // signUp() alone doesn't always hand back an active, logged-in session
+  // (Supabase withholds one until the email is confirmed, if that setting
+  // is on). Without a session, every save afterward gets silently blocked.
+  // So we immediately try to log in with the same credentials to get a
+  // real session going, right away.
+  if (data.session) {
+    currentUser = data.user;
+  } else {
+    const signInResult = await sb.auth.signInWithPassword({ email, password });
+    if (signInResult.error) {
+      showAuthError('Your account was created, but could not log you in automatically — your Supabase project likely still has "Confirm email" turned on. Turn that off in Authentication settings (see the note at the bottom of schema.sql), then try logging in.');
+      return;
+    }
+    currentUser = signInResult.data.user;
+  }
 
   document.getElementById('ob-name').value = name;
   document.getElementById('auth-screen').style.display = 'none';
@@ -314,7 +335,8 @@ async function finishOnboarding() {
   const heightCm = getHeightCm();
   const weightKg = getWeightKg();
 
-  const { error } = await sb.from('profiles').update({
+  const { error } = await sb.from('profiles').upsert({
+    id: currentUser.id,
     display_name: name,
     real_name: name,
     email: currentUser.email,
@@ -327,7 +349,7 @@ async function finishOnboarding() {
     protein_goal: state.goals.protein,
     carbs_goal: state.goals.carbs,
     fat_goal: state.goals.fat,
-  }).eq('id', currentUser.id);
+  }, { onConflict: 'id' });
 
   if (error) {
     alert('Could not save your profile: ' + error.message);
@@ -666,16 +688,16 @@ function renderPartners() {
 }
 
 async function addPartner() {
-  const emailEl = document.getElementById('partner-email-input');
-  const email = emailEl.value.trim();
-  if (!email) return;
-  const { data, error } = await sb.rpc('add_accountability_partner', { friend_email: email });
+  const nameEl = document.getElementById('partner-username-input');
+  const username = nameEl.value.trim();
+  if (!username) return;
+  const { data, error } = await sb.rpc('add_accountability_partner', { friend_username: username });
   if (error) { alert('Something went wrong adding that partner.'); return; }
   if (data === 'not_found') { alert('User not found.'); return; }
   if (data === 'self') { alert("You can't add yourself."); return; }
   if (data === 'full') { alert('This group already has 4 people — the max.'); return; }
   if (data === 'already') { alert('That person is already in your group.'); return; }
-  emailEl.value = '';
+  nameEl.value = '';
   await loadMyGroup();
   renderPartners();
 }

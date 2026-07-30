@@ -103,7 +103,7 @@ input, select { font-family: inherit; }
 }
 .landing-h2 {
   font-family: var(--font-display); font-weight: 600; font-size: clamp(24px, 3.2vw, 32px);
-  letter-spacing: -0.01em; margin: 0 0 16px;
+  letter-spacing: -0.01em; margin: 0 0 16px; text-align: center;
 }
 .landing-p { font-size: 15px; line-height: 1.7; color: var(--ink-soft); max-width: 68ch; margin: 0 auto; text-align: center; }
 
