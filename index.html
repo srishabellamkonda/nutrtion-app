@@ -12,6 +12,9 @@
 <body>
 
 <div class="grain"></div>
+<div id="connection-banner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:999; background:var(--berry); color:#fff; text-align:center; padding:10px 16px; font-size:13px; font-weight:600;">
+  Having trouble connecting — check your internet connection and refresh the page.
+</div>
 
 <!-- ============ PUBLIC LANDING PAGE ============ -->
 <div id="landing-screen">
@@ -47,22 +50,22 @@
     <h2 class="landing-h2" style="text-align:center;">Everything you need, nothing you don't</h2>
     <div class="landing-features">
       <div class="feature-card">
-        <div class="feature-ic">🍽️</div>
+        <div class="feature-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 12V4.7A7.3 7.3 0 0 1 19.3 12H12z" fill="currentColor" stroke="none"/></svg></div>
         <h3>The plate view</h3>
         <p>Your calories and macros, visualized as a single plate that fills in as you log meals.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-ic">🎯</div>
+        <div class="feature-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg></div>
         <h3>Goals that fit you</h3>
         <p>Tell us your goal — lose, gain, maintain, or build muscle — and we calculate your targets.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-ic">🔖</div>
+        <div class="feature-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1z"/></svg></div>
         <h3>Saved meals</h3>
         <p>Log a favorite once, then add it again in one tap next time.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-ic">🏆</div>
+        <div class="feature-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M5 21v-7"/><path d="M12 21V8"/><path d="M19 21v-10"/></svg></div>
         <h3>Accountability</h3>
         <p>Add friends, compare streaks, and keep each other honest — together.</p>
       </div>
@@ -198,20 +201,20 @@
     <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
     <div class="brand"><span class="brand-mark">●</span><span class="brand-name">NutriSync</span></div>
     <div class="topbar-cal" id="topbar-cal-wrap">
-      <span class="fire">🔥</span><span id="topbar-cal">0</span><span class="topbar-cal-of">/ <span id="topbar-cal-goal">2000</span> kcal</span>
+      <span id="topbar-cal">0</span><span class="topbar-cal-of">/ <span id="topbar-cal-goal">2000</span> kcal</span>
     </div>
     <div class="topbar-date" id="today-date"></div>
   </header>
 
   <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
   <nav class="sidebar" id="sidebar">
-    <button class="nav-item active" data-page="tracker" onclick="goPage('tracker')"><span class="ic">🍽️</span>Tracker</button>
-    <button class="nav-item" data-page="progress" onclick="goPage('progress')"><span class="ic">🌱</span>Progress & History</button>
-    <button class="nav-item" data-page="goals" onclick="goPage('goals')"><span class="ic">🎯</span>Goals & Settings</button>
-    <button class="nav-item" data-page="saved" onclick="goPage('saved')"><span class="ic">🔖</span>Saved Meals</button>
-    <button class="nav-item" data-page="search" onclick="goPage('search')"><span class="ic">🔎</span>Food Database</button>
-    <button class="nav-item" data-page="accountability" onclick="goPage('accountability')"><span class="ic">🏆</span>Accountability</button>
-    <button class="nav-item" data-page="account" onclick="goPage('account')"><span class="ic">🙂</span>Account</button>
+    <button class="nav-item active" data-page="tracker" onclick="goPage('tracker')"><span class="ic"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="7"/><path d="M9 9V2.3A7 7 0 0 1 15.6 9H9z" fill="currentColor" stroke="none"/></svg></span>Tracker</button>
+    <button class="nav-item" data-page="progress" onclick="goPage('progress')"><span class="ic"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14l4-4 3 3 6-7"/><path d="M11 6h4v4"/></svg></span>Progress & History</button>
+    <button class="nav-item" data-page="goals" onclick="goPage('goals')"><span class="ic"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="7"/><circle cx="9" cy="9" r="4"/><circle cx="9" cy="9" r="1" fill="currentColor" stroke="none"/></svg></span>Goals & Settings</button>
+    <button class="nav-item" data-page="saved" onclick="goPage('saved')"><span class="ic"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4.5 2.5h9a1 1 0 0 1 1 1V15l-5.5-3L3.5 15V3.5a1 1 0 0 1 1-1z"/></svg></span>Saved Meals</button>
+    <button class="nav-item" data-page="search" onclick="goPage('search')"><span class="ic"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="5.5"/><path d="M15.5 15.5l-3.6-3.6"/></svg></span>Food Database</button>
+    <button class="nav-item" data-page="accountability" onclick="goPage('accountability')"><span class="ic"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3.5 15.5v-5"/><path d="M9 15.5v-9"/><path d="M14.5 15.5v-7"/></svg></span>Accountability</button>
+    <button class="nav-item" data-page="account" onclick="goPage('account')"><span class="ic"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="6.2" r="3"/><path d="M2.8 15.2a6.2 6.2 0 0 1 12.4 0" stroke-linecap="round"/></svg></span>Account</button>
   </nav>
 
   <main class="wrap">
