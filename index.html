@@ -13,9 +13,88 @@
 
 <div class="grain"></div>
 
+<!-- ============ LANDING PAGE ============ -->
+<div id="landing-screen">
+  <nav class="landing-nav">
+    <div class="brand"><span class="brand-mark">●</span><span class="brand-name">NutriSync</span></div>
+    <div class="landing-nav-actions">
+      <button class="btn-outline btn-nav" onclick="goToAuth('login')">Log In</button>
+      <button class="btn-primary btn-nav" onclick="goToAuth('signup')">Sign Up</button>
+    </div>
+  </nav>
+
+  <section class="landing-hero">
+    <p class="eyebrow">no guilt, just the picture</p>
+    <h1>Your plate,<br>in balance.</h1>
+    <p class="landing-sub">NutriSync helps you track meals, hit targets built around your goals, and stay accountable — without obsessing over every gram.</p>
+    <div class="landing-cta">
+      <button class="btn-primary btn-cta" onclick="goToAuth('signup')">Get started free</button>
+      <button class="btn-outline btn-cta" onclick="goToAuth('login')">I already have an account</button>
+    </div>
+    <div class="landing-plate-preview">
+      <svg viewBox="0 0 320 320" aria-hidden="true">
+        <circle cx="160" cy="160" r="150" class="plate-rim" />
+        <circle cx="160" cy="160" r="150" class="plate-track" />
+        <circle cx="160" cy="160" r="150" fill="none" stroke="#4B7752" stroke-width="22" stroke-dasharray="230 713" transform="rotate(-90 160 160)"/>
+        <circle cx="160" cy="160" r="150" fill="none" stroke="#E8873A" stroke-width="22" stroke-dasharray="170 713" stroke-dashoffset="-230" transform="rotate(-90 160 160)"/>
+        <circle cx="160" cy="160" r="150" fill="none" stroke="#A8456B" stroke-width="22" stroke-dasharray="90 713" stroke-dashoffset="-400" transform="rotate(-90 160 160)"/>
+        <circle cx="160" cy="160" r="88" class="plate-well" />
+      </svg>
+      <div class="landing-plate-center">
+        <span class="landing-plate-cal">1,540</span>
+        <span class="landing-plate-cal-label">of 2,000 cal</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="landing-features">
+    <h2>How it works</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-ic">🍽️</div>
+        <h3>Log in seconds</h3>
+        <p>Add a food with its calories and macros, and watch your plate fill in in real time.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-ic">🎯</div>
+        <h3>Goals that fit you</h3>
+        <p>A quick setup sets calorie and macro targets around your goal — lose, gain, maintain, or build muscle.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-ic">📈</div>
+        <h3>See your progress</h3>
+        <p>Build a streak and look back on your history, day by day.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-ic">📌</div>
+        <h3>Save your go-tos</h3>
+        <p>One-click add for the meals you eat again and again.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-ic">🔍</div>
+        <h3>Built-in food database</h3>
+        <p>Search common foods instead of typing macros from scratch every time.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-ic">🏆</div>
+        <h3>Stay accountable</h3>
+        <p>Bring a friend along and keep each other on track with shared streaks.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="landing-final-cta">
+    <h2>Ready to see your plate?</h2>
+    <button class="btn-primary btn-cta" onclick="goToAuth('signup')">Create your free account</button>
+  </section>
+
+  <footer class="footer"><p>NutriSync — built by you, for you.</p></footer>
+</div>
+
 <!-- ============ AUTH SCREEN ============ -->
-<div id="auth-screen">
+<div id="auth-screen" style="display:none;">
   <div class="auth-card">
+    <a class="auth-back" onclick="showLanding()">← Back to home</a>
     <div class="auth-mark"></div>
     <h1>NutriSync</h1>
     <p class="auth-sub" id="auth-subtitle">Log in to see your plate.</p>
@@ -243,9 +322,10 @@
       <h1 class="page-title">Account</h1>
       <div class="panel">
         <h3 style="display:flex; align-items:center; gap:8px;">Profile <span id="admin-badge" style="display:none;" class="badge-admin">Admin</span></h3>
-        <div class="field"><label>Display name (shown on podium)</label><input type="text" id="acc-display-name" value="leafy_jamie"></div>
-        <div class="field"><label>Real name</label><input type="text" id="acc-real-name" value="Jamie Rivera"></div>
-        <div class="field"><label>Email</label><input type="email" id="acc-email" value="jamie@example.com"></div>
+        <div class="field"><label>Display name (shown on podium)</label><input type="text" id="acc-display-name" placeholder="you"></div>
+        <div class="field"><label>Real name</label><input type="text" id="acc-real-name" placeholder="Your name"></div>
+        <div class="field"><label>Email</label><input type="email" id="acc-email" disabled></div>
+        <button class="btn-add btn-secondary" id="acc-save" style="margin-top:4px;">Save profile</button>
       </div>
       <div class="panel">
         <h3>Accountability partners</h3>

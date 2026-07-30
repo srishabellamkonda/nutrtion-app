@@ -35,6 +35,8 @@ let state = {
   goalType: 'lose',  // lose | gain | maintain | muscle
   isAdmin: false,
   displayName: 'you',
+  realName: '',
+  email: '',
   accountabilityPartners: [], // starts empty — nobody is added until a real account system exists
 };
 
@@ -65,12 +67,29 @@ function escapeHtml(str) {
 // AUTH — real Supabase accounts
 // ============================================
 let isSignup = false;
-function toggleAuthMode() {
-  isSignup = !isSignup;
+
+function setAuthMode(signup) {
+  isSignup = signup;
   showAuthError('');
   document.getElementById('login-form').style.display = isSignup ? 'none' : 'block';
   document.getElementById('signup-form').style.display = isSignup ? 'block' : 'none';
   document.getElementById('auth-subtitle').textContent = isSignup ? 'Create your account to get started.' : 'Log in to see your plate.';
+}
+function toggleAuthMode() {
+  setAuthMode(!isSignup);
+}
+
+// Landing page <-> auth screen navigation
+function showLanding() {
+  document.getElementById('landing-screen').style.display = 'block';
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('onboarding-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'none';
+}
+function goToAuth(mode) {
+  document.getElementById('landing-screen').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
+  setAuthMode(mode === 'signup');
 }
 
 async function handleLogin() {
@@ -100,9 +119,31 @@ async function handleSignup() {
   if (!name || !email || !password) { showAuthError('Fill in your name, email, and password.'); return; }
   if (password.length < 6) { showAuthError('Password needs to be at least 6 characters.'); return; }
 
-  const { data, error } = await sb.auth.signUp({ email, password });
-  if (error) { showAuthError(error.message); return; }
+  const { data, error } = await sb.auth.signUp({
+    email,
+    password,
+    options: { data: { display_name: name } },
+  });
+  if (error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('already been registered')) {
+      showAuthError('An account with this email already exists. Please log in instead.');
+    } else {
+      showAuthError(error.message);
+    }
+    return;
+  }
   currentUser = data.user;
+
+  // The profile row itself is created by a database trigger on signup; store the
+  // name and email we already have on it right away, rather than waiting for
+  // onboarding to finish.
+  if (currentUser) {
+    await sb.from('profiles').update({
+      display_name: name,
+      email: email,
+    }).eq('id', currentUser.id);
+  }
 
   document.getElementById('ob-name').value = name;
   document.getElementById('auth-screen').style.display = 'none';
@@ -113,7 +154,7 @@ async function logOut() {
   await sb.auth.signOut();
   currentUser = null;
   document.getElementById('app-shell').style.display = 'none';
-  document.getElementById('auth-screen').style.display = 'flex';
+  showLanding();
 }
 
 // A profile with no real_name yet means onboarding was never finished.
@@ -143,6 +184,8 @@ async function loadProfileAndEnter() {
 
 function applyProfile(profile) {
   state.displayName = profile.display_name || 'you';
+  state.realName = profile.real_name || '';
+  state.email = profile.email || (currentUser && currentUser.email) || '';
   state.goalType = profile.goal_type || 'maintain';
   state.isAdmin = profile.role === 'admin';
   state.goals = {
@@ -153,11 +196,15 @@ function applyProfile(profile) {
   };
 }
 
-// If there's already a logged-in session (from last time), skip the login screen.
+// If there's already a logged-in session (from last time), skip straight into the
+// app — users stay logged in until they explicitly sign out. Otherwise show the
+// public landing page.
 sb.auth.getSession().then(async ({ data }) => {
   if (data.session) {
     currentUser = data.session.user;
     await loadProfileAndEnter();
+  } else {
+    showLanding();
   }
 });
 
@@ -261,11 +308,36 @@ function enterApp() {
   });
 
   fillGoalsForm();
+  fillAccountForm();
   renderAll();
   renderGoalGuidance();
   renderFoodDb();
   renderPartners();
 }
+
+function fillAccountForm() {
+  document.getElementById('acc-display-name').value = state.displayName || '';
+  document.getElementById('acc-real-name').value = state.realName || '';
+  document.getElementById('acc-email').value = state.email || '';
+}
+
+document.getElementById('acc-save').addEventListener('click', async () => {
+  if (!currentUser) return;
+  const displayName = document.getElementById('acc-display-name').value.trim() || 'you';
+  const realName = document.getElementById('acc-real-name').value.trim();
+
+  const { error } = await sb.from('profiles').update({
+    display_name: displayName,
+    real_name: realName,
+  }).eq('id', currentUser.id);
+
+  if (error) { alert('Could not save your profile: ' + error.message); return; }
+
+  state.displayName = displayName;
+  state.realName = realName;
+  renderAll();
+  alert('Profile updated.');
+});
 
 // ============================================
 // SIDEBAR NAV

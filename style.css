@@ -58,6 +58,84 @@ input, select { font-family: inherit; }
 }
 
 /* ============================================
+   LANDING PAGE
+   ============================================ */
+#landing-screen { min-height: 100vh; }
+
+.landing-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px clamp(20px, 5vw, 56px);
+  border-bottom: 1px solid var(--line);
+}
+.landing-nav .brand { display: flex; align-items: center; gap: 8px; }
+.landing-nav .brand-mark { color: var(--citrus); font-size: 12px; }
+.landing-nav .brand-name { font-family: var(--font-display); font-weight: 600; font-size: 19px; }
+.landing-nav-actions { display: flex; gap: 10px; }
+.btn-nav { width: auto; padding: 9px 18px; margin: 0; font-size: 13.5px; }
+
+.landing-hero {
+  max-width: 1000px; margin: 0 auto;
+  padding: clamp(48px, 8vw, 90px) clamp(20px, 5vw, 56px) 40px;
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 48px;
+}
+.landing-hero .eyebrow { margin: 0 0 12px; }
+.landing-hero h1 {
+  font-family: var(--font-display); font-weight: 600;
+  font-size: clamp(36px, 6vw, 58px); line-height: 1.03; letter-spacing: -0.02em; margin: 0 0 16px;
+}
+.landing-sub { font-size: 16px; color: var(--ink-soft); max-width: 44ch; line-height: 1.55; margin: 0 0 26px; }
+.landing-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+.landing-cta .btn-cta { width: auto; padding: 13px 26px; margin: 0; }
+
+.landing-plate-preview { position: relative; width: 240px; height: 240px; flex-shrink: 0; justify-self: center; }
+.landing-plate-preview svg { width: 100%; height: 100%; }
+.landing-plate-preview circle.plate-track { stroke-width: 22; }
+.landing-plate-center {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center; pointer-events: none;
+}
+.landing-plate-cal { font-family: var(--font-display); font-size: 30px; font-weight: 600; line-height: 1; }
+.landing-plate-cal-label { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-soft); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.landing-features {
+  max-width: 1000px; margin: 0 auto;
+  padding: 20px clamp(20px, 5vw, 56px) 50px;
+}
+.landing-features h2 {
+  font-family: var(--font-display); font-weight: 600; font-size: 26px;
+  margin: 0 0 22px; letter-spacing: -0.01em; text-align: center;
+}
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.feature-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 22px 20px;
+}
+.feature-ic { font-size: 24px; margin-bottom: 10px; }
+.feature-card h3 { font-family: var(--font-display); font-weight: 600; font-size: 16px; margin: 0 0 6px; }
+.feature-card p { font-size: 13.5px; color: var(--ink-soft); line-height: 1.5; margin: 0; }
+
+.landing-final-cta {
+  max-width: 640px; margin: 0 auto; text-align: center;
+  padding: 10px clamp(20px, 5vw, 56px) 60px;
+}
+.landing-final-cta h2 {
+  font-family: var(--font-display); font-weight: 600; font-size: 26px;
+  margin: 0 0 20px; letter-spacing: -0.01em;
+}
+.landing-final-cta .btn-cta { width: auto; padding: 14px 28px; margin: 0; }
+
+@media (max-width: 720px) {
+  .landing-hero { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+  .landing-cta { justify-content: center; }
+  .feature-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .feature-grid { grid-template-columns: 1fr; }
+  .landing-nav-actions { gap: 6px; }
+  .btn-nav { padding: 8px 12px; font-size: 12.5px; }
+}
+
+/* ============================================
    AUTH SCREEN
    ============================================ */
 #auth-screen {
@@ -74,7 +152,17 @@ input, select { font-family: inherit; }
   padding: 40px 36px;
   width: 100%;
   max-width: 380px;
+  position: relative;
 }
+.auth-back {
+  display: inline-block;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  text-decoration: none;
+  cursor: pointer;
+  margin-bottom: 18px;
+}
+.auth-back:hover { color: var(--matcha); }
 .auth-mark {
   width: 46px; height: 46px;
   border-radius: 50%;
@@ -115,6 +203,7 @@ input, select { font-family: inherit; }
   transition: border-color 0.15s ease;
 }
 .field input:focus { border-color: var(--matcha); }
+.field input:disabled { color: var(--ink-soft); background: var(--line); cursor: not-allowed; }
 
 .btn-primary {
   width: 100%;
