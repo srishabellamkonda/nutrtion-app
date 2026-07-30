@@ -145,8 +145,8 @@ drop function if exists public.set_link_streaks(boolean);
 drop function if exists public.get_my_pending_invites();
 drop function if exists public.respond_to_partner_request(bigint, boolean);
 drop function if exists public.remove_accountability_partner(uuid);
-drop table if exists public.group_members;
-drop table if exists public.accountability_groups;
+drop table if exists public.group_members cascade;
+drop table if exists public.accountability_groups cascade;
 
 -- ---------- partnerships (individual, pairwise — NOT shared groups) ----------
 -- Each row is ONE relationship between two specific people. Nick adding
