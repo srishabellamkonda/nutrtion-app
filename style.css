@@ -74,6 +74,7 @@ input, select { font-family: inherit; }
 }
 .landing-nav .brand { display: flex; align-items: center; }
 .brand-logo { height: 26px; width: auto; display: block; }
+.landing-nav .brand-logo { height: 38px; }
 .landing-nav-links { display: flex; gap: 26px; margin-left: auto; }
 .landing-nav-links a {
   color: var(--ink); text-decoration: none; font-weight: 500; font-size: 14px;
