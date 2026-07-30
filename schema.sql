@@ -294,11 +294,6 @@ begin
     return 'already';
   end if;
 
-  -- keep this simple: someone can only be in (or pending for) one group at a time
-  if exists (select 1 from group_members where user_id = friend_id) then
-    return 'in_other_group';
-  end if;
-
   insert into group_members (group_id, user_id, status) values (my_group_id, friend_id, 'pending');
   return 'ok';
 end;
@@ -306,6 +301,8 @@ $$;
 grant execute on function public.add_accountability_partner to authenticated;
 
 -- Case-insensitive "type ahead" search for the Add Partner box.
+-- Matches names that START WITH what's typed (not just contain it
+-- anywhere) — so typing "a" only shows names beginning with A.
 -- Returns only display_name (nothing private), and never yourself.
 create or replace function public.search_users(query text, limit_n int default 8)
 returns table(id uuid, display_name text)
@@ -315,7 +312,7 @@ stable
 as $$
   select id, display_name from profiles
   where display_name is not null
-    and display_name ilike '%' || query || '%'
+    and display_name ilike query || '%'
     and id <> auth.uid()
   order by display_name
   limit limit_n;
@@ -407,6 +404,24 @@ begin
 end;
 $$;
 grant execute on function public.get_admin_stats to authenticated;
+
+-- ============================================================
+-- BASE TABLE GRANTS — required in addition to the RLS policies above.
+-- RLS controls which ROWS a role can see/change; these grants control
+-- whether the role can touch the TABLE at all. Without these, every
+-- query fails with "permission denied for table ..." regardless of
+-- what the RLS policies say.
+-- ============================================================
+grant usage on schema public to anon, authenticated;
+
+grant select, insert, update on public.profiles to authenticated;
+grant select, insert, update, delete on public.food_logs to authenticated;
+grant select, insert, update, delete on public.saved_meals to authenticated;
+grant select, insert, update, delete on public.activity_logs to authenticated;
+grant select on public.accountability_groups to authenticated;
+grant select on public.group_members to authenticated;
+grant insert on public.login_events to authenticated;
+grant select on public.foods to authenticated, anon;
 
 -- ============================================================
 -- To make yourself an admin, run this once with your own email:

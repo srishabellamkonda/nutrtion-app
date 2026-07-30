@@ -863,7 +863,6 @@ async function addPartner() {
   if (data === 'self') { alert("You can't add yourself."); return; }
   if (data === 'full') { alert('This group already has 4 people — the max.'); return; }
   if (data === 'already') { alert('You already have a pending or accepted invite with that person.'); return; }
-  if (data === 'in_other_group') { alert('That person is already in another accountability group.'); return; }
   nameEl.value = '';
   document.getElementById('partner-search-dropdown').classList.remove('show');
   alert('Invite sent — they need to accept it before you show up as partners.');
