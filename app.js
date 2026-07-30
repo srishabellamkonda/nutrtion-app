@@ -286,6 +286,7 @@ let onboardStep = 1;
 let obGender = 'female';
 let obHeightUnit = 'imperial';
 let obWeightUnit = 'lbs';
+let obTargetWeightUnit = 'lbs';
 
 function selectGender(g, el) {
   obGender = g;
@@ -306,6 +307,11 @@ function setHeightUnit(unit, el) {
 }
 function setWeightUnit(unit, el) {
   obWeightUnit = unit;
+  el.parentElement.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function setTargetWeightUnit(unit, el) {
+  obTargetWeightUnit = unit;
   el.parentElement.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
 }
@@ -411,7 +417,7 @@ function computePlan() {
   // direction are both given. ~3,500 kcal ≈ 1 lb of body weight.
   const targetWeightRaw = parseFloat(document.getElementById('ob-target').value);
   if (targetWeightRaw && (state.goalType === 'lose' || state.goalType === 'gain')) {
-    const targetKg = obWeightUnit === 'kg' ? targetWeightRaw : targetWeightRaw * 0.453592;
+    const targetKg = obTargetWeightUnit === 'kg' ? targetWeightRaw : targetWeightRaw * 0.453592;
     const weightDiffKg = Math.abs(weightKg - targetKg);
     const dailyDelta = Math.abs(maintenanceCals - target);
     if (weightDiffKg > 0 && dailyDelta > 0) {
