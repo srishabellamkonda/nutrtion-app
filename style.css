@@ -73,8 +73,8 @@ input, select { font-family: inherit; }
   box-shadow: 0 2px 10px rgba(31,42,30,0.05);
 }
 .landing-nav .brand { display: flex; align-items: center; gap: 8px; }
-.landing-nav .brand-mark { color: var(--citrus); font-size: 12px; }
-.landing-nav .brand-name { font-family: var(--font-display); font-weight: 600; font-size: 19px; }
+.brand-icon { height: 30px; width: auto; display: block; }
+.brand-wordmark { height: 18px; width: auto; display: block; }
 .landing-nav-links { display: flex; gap: 26px; margin-left: auto; }
 .landing-nav-links a {
   color: var(--ink); text-decoration: none; font-weight: 500; font-size: 14px;
@@ -155,11 +155,9 @@ input, select { font-family: inherit; }
   max-width: 380px;
 }
 .auth-mark {
-  width: 46px; height: 46px;
-  border-radius: 50%;
-  border: 3px solid var(--matcha);
-  border-right-color: var(--citrus);
-  border-bottom-color: var(--berry);
+  display: block;
+  width: 52px; height: 52px;
+  object-fit: contain;
   margin: 0 auto 18px;
 }
 .auth-card h1 {
@@ -337,8 +335,6 @@ input, select { font-family: inherit; }
 .hamburger:hover { background: var(--matcha-soft); }
 .hamburger:hover span { background: var(--matcha); }
 .topbar .brand { display: flex; align-items: center; gap: 8px; }
-.topbar .brand-mark { color: var(--citrus); font-size: 12px; }
-.topbar .brand-name { font-family: var(--font-display); font-weight: 600; font-size: 19px; }
 
 .topbar-cal {
   display: flex; align-items: baseline; gap: 6px; margin-left: 24px;
@@ -352,6 +348,11 @@ input, select { font-family: inherit; }
   font-family: var(--font-mono); font-size: 11.5px; color: var(--ink-soft);
   text-transform: uppercase; letter-spacing: 0.05em;
 }
+.topbar-greeting {
+  font-weight: 600; font-size: 14px; margin-left: 18px; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px;
+}
+@media (max-width: 640px) { .topbar-greeting { display: none; } }
 
 .sidebar {
   position: fixed; top: 62px; left: 0; bottom: 0; width: 250px; z-index: 29;
@@ -583,23 +584,18 @@ input, select { font-family: inherit; }
   .btn-inline { padding: 9px 14px; font-size: 13px; }
 }
 
-/* ---------- desktop: real multi-column app layout ---------- */
+/* ---------- desktop: real multi-column app layout, with a collapsible sidebar ---------- */
 @media (min-width: 1024px) {
-  .hamburger { display: none; }
-  .overlay { display: none; }
-  .sidebar-close { display: none; }
-
-  .sidebar {
-    transform: none;
-    position: fixed;
-  }
-
   .wrap {
-    padding-left: max(250px, calc(250px + clamp(0px, 2vw, 24px)));
+    padding-left: clamp(20px, 5vw, 32px);
     display: grid;
     grid-template-columns: minmax(0, 900px) minmax(280px, 340px);
     gap: 28px;
     align-items: start;
+    transition: padding-left 0.22s ease;
+  }
+  body.sidebar-open .wrap {
+    padding-left: max(250px, calc(250px + clamp(0px, 2vw, 24px)));
   }
   .wrap-center { max-width: none; }
   .wrap-right { display: block; position: sticky; top: 86px; }

@@ -438,6 +438,14 @@ async function enterApp() {
   document.getElementById('today-date').textContent = new Date().toLocaleDateString(undefined, {
     weekday: 'long', month: 'long', day: 'numeric'
   });
+  document.getElementById('topbar-greeting').textContent = 'Hi, ' + state.displayName;
+
+  // Sidebar starts open on wide screens (like a normal desktop app), but
+  // stays collapsible via the hamburger/× — it just isn't forced open anymore.
+  if (window.innerWidth >= 1024) {
+    document.getElementById('sidebar').classList.add('open');
+    document.body.classList.add('sidebar-open');
+  }
 
   await Promise.all([
     loadTodayEntries(),
@@ -462,8 +470,11 @@ async function enterApp() {
 // SIDEBAR NAV
 // ============================================
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('overlay').classList.toggle('show');
+  const isOpen = document.getElementById('sidebar').classList.toggle('open');
+  document.body.classList.toggle('sidebar-open', isOpen);
+  if (window.innerWidth < 1024) {
+    document.getElementById('overlay').classList.toggle('show', isOpen);
+  }
 }
 function goPage(p) {
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
