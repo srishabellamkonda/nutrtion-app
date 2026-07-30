@@ -746,6 +746,7 @@ async function loadLeaderboard() {
 
 async function loadMyGroup() {
   const { data, error } = await sb.rpc('get_my_group');
+  if (error) console.error('loadMyGroup failed:', error.message);
   state.myGroup = error ? [] : data;
   const mine = state.myGroup.find(m => m.user_id === currentUser.id);
   state.linkStreaks = mine ? mine.link_streaks : true;
@@ -753,6 +754,7 @@ async function loadMyGroup() {
 
 async function loadPendingInvites() {
   const { data, error } = await sb.rpc('get_my_pending_invites');
+  if (error) console.error('loadPendingInvites failed:', error.message);
   state.pendingInvites = error ? [] : data;
 }
 
@@ -849,6 +851,7 @@ function renderLeaderboard() {
 
 function renderPartners() {
   const others = state.myGroup.filter(m => m.user_id !== currentUser.id);
+  const mine = state.myGroup.find(m => m.user_id === currentUser.id);
   const listEl = document.getElementById('partner-list');
   const emptyEl = document.getElementById('partner-empty');
 
@@ -861,12 +864,32 @@ function renderPartners() {
       <div class="leader-row">
         <div class="avatar-sm">${escapeHtml((p.display_name || 'u')[0].toUpperCase())}</div>
         <div style="flex:1; font-weight:600; font-size:13.5px;">${escapeHtml(p.display_name)}</div>
-        <div style="font-size:12px; color:var(--ink-soft); font-family:var(--font-mono);">🔥 ${p.current_streak}d</div>
+        <div style="font-size:12px; color:var(--ink-soft); font-family:var(--font-mono); margin-right:8px;">🔥 ${p.current_streak}d</div>
+        <button class="log-item-remove" data-id="${p.user_id}" aria-label="Remove ${escapeHtml(p.display_name)}" title="Remove partner">×</button>
       </div>`).join('');
+
+    listEl.querySelectorAll('.log-item-remove').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Remove this person from your accountability group?')) return;
+        await sb.rpc('remove_accountability_partner', { target_user_id: btn.dataset.id });
+        await loadMyGroup();
+        renderPartners();
+      });
+    });
   }
+
+  const leaveWrap = document.getElementById('leave-group-wrap');
+  if (leaveWrap) leaveWrap.style.display = mine ? 'block' : 'none';
 
   const toggleEl = document.getElementById('link-streak-toggle');
   toggleEl.classList.toggle('on', !!state.linkStreaks);
+}
+
+async function leaveGroup() {
+  if (!confirm("Leave your accountability group? You'll need a new invite to join one again.")) return;
+  await sb.rpc('remove_accountability_partner', { target_user_id: currentUser.id });
+  await loadMyGroup();
+  renderPartners();
 }
 
 async function addPartner() {

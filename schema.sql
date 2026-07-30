@@ -353,6 +353,23 @@ end;
 $$;
 grant execute on function public.respond_to_partner_request to authenticated;
 
+-- Remove someone from your accountability group (or leave it yourself by
+-- passing your own id). Only works within the group you're actually in.
+create or replace function public.remove_accountability_partner(target_user_id uuid)
+returns void
+language plpgsql
+security definer
+as $$
+declare
+  my_group_id bigint;
+begin
+  select group_id into my_group_id from group_members where user_id = auth.uid() and status = 'accepted' limit 1;
+  if my_group_id is null then return; end if;
+  delete from group_members where group_id = my_group_id and user_id = target_user_id;
+end;
+$$;
+grant execute on function public.remove_accountability_partner to authenticated;
+
 -- Get the caller's own accountability group (accepted members + settings)
 create or replace function public.get_my_group()
 returns table(group_id bigint, link_streaks boolean, user_id uuid, display_name text, current_streak int)
