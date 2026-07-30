@@ -376,11 +376,12 @@
           <div id="leaderboard-list"></div>
         </div>
         <div class="panel" id="pending-invites-panel" style="display:none;">
-          <h3>Invites waiting on you</h3>
+          <h3>Requests waiting on you</h3>
           <div id="pending-invites-list"></div>
         </div>
         <div class="panel">
-          <h3>Your accountability group</h3>
+          <h3>Your accountability partners</h3>
+          <p style="font-size:12px; color:var(--ink-soft); margin:0 0 10px;">Each partner is independent — up to 4 people, and nobody else's streak is affected unless you're linked directly with them.</p>
           <div id="partner-list"></div>
           <p id="partner-empty" class="log-empty">No accountability partners yet — invite a friend to get started.</p>
           <div class="field" style="margin-top:12px; position:relative;">
@@ -390,15 +391,6 @@
               <button class="btn-add" style="width:auto; grid-column:auto; margin:0;" onclick="addPartner()">Send invite</button>
             </div>
             <div id="partner-search-dropdown" class="search-dropdown"></div>
-          </div>
-          <div id="leave-group-wrap" style="display:none; margin-top:14px;">
-            <button class="btn-outline" style="width:auto; color:var(--berry); border-color:var(--berry-soft);" onclick="leaveGroup()">Leave group</button>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="set-row" style="border-top:none;">
-            <div><div class="lbl">Link streaks with this group</div><div class="desc">If one of you misses your goal, everyone's streak resets. Recommended once you have partners.</div></div>
-            <button class="toggle" id="link-streak-toggle" onclick="toggleLinkStreaks(this)"><div class="knob"></div></button>
           </div>
         </div>
       </div>

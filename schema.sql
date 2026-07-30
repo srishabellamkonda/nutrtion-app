@@ -138,43 +138,37 @@ create policy "saved_meals_owner_all" on saved_meals
   for all using (user_id = auth.uid() or public.is_admin())
   with check (user_id = auth.uid());
 
--- ---------- accountability groups (up to 4 members) ----------
-create table if not exists accountability_groups (
+-- ---------- migrate away from the old shared-group model ----------
+drop function if exists public.add_accountability_partner(text);
+drop function if exists public.get_my_group();
+drop function if exists public.set_link_streaks(boolean);
+drop function if exists public.get_my_pending_invites();
+drop function if exists public.respond_to_partner_request(bigint, boolean);
+drop function if exists public.remove_accountability_partner(uuid);
+drop table if exists public.group_members;
+drop table if exists public.accountability_groups;
+
+-- ---------- partnerships (individual, pairwise — NOT shared groups) ----------
+-- Each row is ONE relationship between two specific people. Nick adding
+-- Sarah and Nick adding Amy are two totally separate rows — Sarah and Amy
+-- are not connected to each other just because they're both linked to Nick.
+-- Each person can have up to 4 accepted partnerships, each independent.
+create table if not exists partnerships (
   id bigint generated always as identity primary key,
-  link_streaks boolean default true,
-  created_by uuid references auth.users(id)
+  requester_id uuid references auth.users(id) on delete cascade not null,
+  recipient_id uuid references auth.users(id) on delete cascade not null,
+  status text not null default 'pending' check (status in ('pending','accepted')),
+  link_streaks boolean not null default true,
+  created_at timestamptz default now(),
+  constraint no_self_partner check (requester_id <> recipient_id)
 );
+create unique index if not exists partnerships_unique_pair
+  on partnerships (least(requester_id, recipient_id), greatest(requester_id, recipient_id));
 
-create table if not exists group_members (
-  group_id bigint references accountability_groups(id) on delete cascade,
-  user_id uuid references auth.users(id) on delete cascade,
-  status text not null default 'accepted', -- 'pending' until the invitee accepts, then 'accepted'
-  primary key (group_id, user_id)
-);
-alter table group_members add column if not exists status text not null default 'accepted';
-do $$
-begin
-  if not exists (select 1 from pg_constraint where conname = 'group_members_status_check') then
-    alter table group_members add constraint group_members_status_check check (status in ('pending','accepted'));
-  end if;
-end $$;
-
-alter table accountability_groups enable row level security;
-alter table group_members enable row level security;
-
-drop policy if exists "groups_member_select" on accountability_groups;
-create policy "groups_member_select" on accountability_groups
-  for select using (
-    id in (select group_id from group_members where user_id = auth.uid())
-    or public.is_admin()
-  );
-
-drop policy if exists "group_members_select" on group_members;
-create policy "group_members_select" on group_members
-  for select using (
-    group_id in (select group_id from group_members where user_id = auth.uid())
-    or public.is_admin()
-  );
+alter table partnerships enable row level security;
+drop policy if exists "partnerships_select" on partnerships;
+create policy "partnerships_select" on partnerships
+  for select using (requester_id = auth.uid() or recipient_id = auth.uid() or public.is_admin());
 
 -- ---------- login_events (for admin usage stats) ----------
 create table if not exists login_events (
@@ -208,7 +202,42 @@ create policy "foods_public_read" on foods
 -- without being able to read other people's private data)
 -- ============================================================
 
--- Recalculate + store the caller's own streak
+-- Was a given user on-goal for a given day? Returns null if they logged
+-- nothing that day at all (treated as "not on goal" by callers).
+create or replace function public.is_day_on_goal(p_user_id uuid, p_date date)
+returns boolean
+language plpgsql
+security definer
+stable
+as $$
+declare
+  goal numeric;
+  gtype text;
+  total numeric;
+  buffer int := 50;
+begin
+  select calorie_goal, goal_type into goal, gtype from profiles where id = p_user_id;
+  if goal is null then goal := 2000; end if;
+  if gtype is null then gtype := 'maintain'; end if;
+
+  select coalesce(sum(calories),0) into total from food_logs where user_id = p_user_id and log_date = p_date;
+  if total = 0 then return null; end if;
+
+  if gtype = 'lose' then
+    return total <= goal + buffer;
+  elsif gtype in ('gain','muscle') then
+    return total >= goal - buffer;
+  else
+    return abs(total - goal) <= buffer;
+  end if;
+end;
+$$;
+grant execute on function public.is_day_on_goal to authenticated;
+
+-- Recalculate + store the caller's own streak. If the caller has any
+-- accepted partnership with link_streaks turned on, that specific
+-- partner ALSO has to have hit their own goal that day, or the streak
+-- breaks — but only because of THAT partner, never anyone else's.
 create or replace function public.recompute_my_streak()
 returns int
 language plpgsql
@@ -216,31 +245,35 @@ security definer
 as $$
 declare
   d date := current_date;
-  goal numeric;
-  gtype text;
-  total numeric;
   streak int := 0;
-  buffer int := 50;
-  on_goal boolean;
+  my_ok boolean;
+  partner_ok boolean;
+  all_ok boolean;
+  partner_ids uuid[];
+  pid uuid;
 begin
-  select calorie_goal, goal_type into goal, gtype from profiles where id = auth.uid();
-  if goal is null then goal := 2000; end if;
-  if gtype is null then gtype := 'maintain'; end if;
+  select array_agg(case when requester_id = auth.uid() then recipient_id else requester_id end)
+    into partner_ids
+  from partnerships
+  where status = 'accepted' and link_streaks = true
+    and (requester_id = auth.uid() or recipient_id = auth.uid());
 
   loop
-    select coalesce(sum(calories),0) into total from food_logs
-      where user_id = auth.uid() and log_date = d;
-    exit when total = 0;
+    my_ok := public.is_day_on_goal(auth.uid(), d);
+    exit when my_ok is null;
+    all_ok := my_ok;
 
-    if gtype = 'lose' then
-      on_goal := total <= goal + buffer;
-    elsif gtype in ('gain','muscle') then
-      on_goal := total >= goal - buffer;
-    else
-      on_goal := abs(total - goal) <= buffer;
+    if all_ok and partner_ids is not null then
+      foreach pid in array partner_ids loop
+        partner_ok := public.is_day_on_goal(pid, d);
+        if partner_ok is not true then
+          all_ok := false;
+          exit;
+        end if;
+      end loop;
     end if;
 
-    exit when not on_goal;
+    exit when not all_ok;
     streak := streak + 1;
     d := d - 1;
   end loop;
@@ -265,40 +298,42 @@ as $$
 $$;
 grant execute on function public.get_leaderboard to authenticated;
 
--- Send an accountability invite by username. The other person shows up as
--- "pending" until they accept — this does NOT add them right away.
-create or replace function public.add_accountability_partner(friend_username text)
+-- Send a partner request by username. Nothing is linked until they accept.
+create or replace function public.send_partner_request(friend_username text)
 returns text
 language plpgsql
 security definer
 as $$
 declare
   friend_id uuid;
-  my_group_id bigint;
-  member_count int;
+  my_count int;
+  their_count int;
 begin
   select id into friend_id from profiles where lower(display_name) = lower(friend_username) limit 1;
   if friend_id is null then return 'not_found'; end if;
   if friend_id = auth.uid() then return 'self'; end if;
 
-  select group_id into my_group_id from group_members where user_id = auth.uid() and status = 'accepted' limit 1;
-  if my_group_id is null then
-    insert into accountability_groups (created_by) values (auth.uid()) returning id into my_group_id;
-    insert into group_members (group_id, user_id, status) values (my_group_id, auth.uid(), 'accepted');
-  end if;
-
-  select count(*) into member_count from group_members where group_id = my_group_id;
-  if member_count >= 4 then return 'full'; end if;
-
-  if exists (select 1 from group_members where group_id = my_group_id and user_id = friend_id) then
+  if exists (
+    select 1 from partnerships
+    where (requester_id = auth.uid() and recipient_id = friend_id)
+       or (requester_id = friend_id and recipient_id = auth.uid())
+  ) then
     return 'already';
   end if;
 
-  insert into group_members (group_id, user_id, status) values (my_group_id, friend_id, 'pending');
+  select count(*) into my_count from partnerships
+    where status = 'accepted' and (requester_id = auth.uid() or recipient_id = auth.uid());
+  if my_count >= 4 then return 'full'; end if;
+
+  select count(*) into their_count from partnerships
+    where status = 'accepted' and (requester_id = friend_id or recipient_id = friend_id);
+  if their_count >= 4 then return 'their_full'; end if;
+
+  insert into partnerships (requester_id, recipient_id, status) values (auth.uid(), friend_id, 'pending');
   return 'ok';
 end;
 $$;
-grant execute on function public.add_accountability_partner to authenticated;
+grant execute on function public.send_partner_request to authenticated;
 
 -- Case-insensitive "type ahead" search for the Add Partner box.
 -- Matches names that START WITH what's typed (not just contain it
@@ -319,88 +354,79 @@ as $$
 $$;
 grant execute on function public.search_users to authenticated;
 
--- Pending invites waiting on the CALLER to accept/decline, with who sent them
-create or replace function public.get_my_pending_invites()
-returns table(group_id bigint, invited_by text)
+-- Pending requests waiting on the CALLER to accept/decline
+create or replace function public.get_my_pending_requests()
+returns table(request_id bigint, from_name text)
 language sql
 security definer
 stable
 as $$
-  select gm.group_id, string_agg(p.display_name, ', ')
-  from group_members gm
-  join profiles p on p.id = gm.user_id
-  where gm.status = 'accepted'
-    and gm.group_id in (
-      select group_id from group_members where user_id = auth.uid() and status = 'pending'
-    )
-  group by gm.group_id;
+  select pr.id, coalesce(p.display_name, 'user')
+  from partnerships pr
+  join profiles p on p.id = pr.requester_id
+  where pr.recipient_id = auth.uid() and pr.status = 'pending';
 $$;
-grant execute on function public.get_my_pending_invites to authenticated;
+grant execute on function public.get_my_pending_requests to authenticated;
 
--- Accept or decline a pending invite
-create or replace function public.respond_to_partner_request(target_group_id bigint, accept boolean)
+-- Accept or decline a pending request
+create or replace function public.respond_to_partner_request(request_id bigint, accept boolean)
 returns void
 language plpgsql
 security definer
 as $$
 begin
   if accept then
-    update group_members set status = 'accepted' where group_id = target_group_id and user_id = auth.uid();
+    update partnerships set status = 'accepted' where id = request_id and recipient_id = auth.uid();
   else
-    delete from group_members where group_id = target_group_id and user_id = auth.uid();
+    delete from partnerships where id = request_id and recipient_id = auth.uid();
   end if;
 end;
 $$;
 grant execute on function public.respond_to_partner_request to authenticated;
 
--- Remove someone from your accountability group (or leave it yourself by
--- passing your own id). Only works within the group you're actually in.
-create or replace function public.remove_accountability_partner(target_user_id uuid)
-returns void
-language plpgsql
-security definer
-as $$
-declare
-  my_group_id bigint;
-begin
-  select group_id into my_group_id from group_members where user_id = auth.uid() and status = 'accepted' limit 1;
-  if my_group_id is null then return; end if;
-  delete from group_members where group_id = my_group_id and user_id = target_user_id;
-end;
-$$;
-grant execute on function public.remove_accountability_partner to authenticated;
-
--- Get the caller's own accountability group (accepted members + settings)
-create or replace function public.get_my_group()
-returns table(group_id bigint, link_streaks boolean, user_id uuid, display_name text, current_streak int)
+-- All of the caller's accepted partners, each independent of the others
+create or replace function public.get_my_partners()
+returns table(partnership_id bigint, user_id uuid, display_name text, current_streak int, link_streaks boolean)
 language sql
 security definer
 stable
 as $$
-  select g.id, g.link_streaks, p.id, coalesce(p.display_name,'user'), coalesce(p.current_streak,0)
-  from group_members gm
-  join accountability_groups g on g.id = gm.group_id
-  join profiles p on p.id = gm.user_id
-  where gm.status = 'accepted'
-    and gm.group_id = (select group_id from group_members where user_id = auth.uid() and status = 'accepted' limit 1);
+  select pr.id,
+         case when pr.requester_id = auth.uid() then pr.recipient_id else pr.requester_id end,
+         coalesce(p.display_name, 'user'),
+         coalesce(p.current_streak, 0),
+         pr.link_streaks
+  from partnerships pr
+  join profiles p on p.id = (case when pr.requester_id = auth.uid() then pr.recipient_id else pr.requester_id end)
+  where pr.status = 'accepted' and (pr.requester_id = auth.uid() or pr.recipient_id = auth.uid());
 $$;
-grant execute on function public.get_my_group to authenticated;
+grant execute on function public.get_my_partners to authenticated;
 
--- Toggle the "link streaks" setting for the caller's group
-create or replace function public.set_link_streaks(new_val boolean)
+-- Remove ONE specific partnership. Either side can do this any time.
+create or replace function public.remove_partner(target_partnership_id bigint)
 returns void
 language plpgsql
 security definer
 as $$
-declare gid bigint;
 begin
-  select group_id into gid from group_members where user_id = auth.uid() and status = 'accepted' limit 1;
-  if gid is not null then
-    update accountability_groups set link_streaks = new_val where id = gid;
-  end if;
+  delete from partnerships
+  where id = target_partnership_id and (requester_id = auth.uid() or recipient_id = auth.uid());
 end;
 $$;
-grant execute on function public.set_link_streaks to authenticated;
+grant execute on function public.remove_partner to authenticated;
+
+-- Toggle whether ONE specific partnership affects both people's streaks
+create or replace function public.set_partner_link_streaks(target_partnership_id bigint, new_val boolean)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  update partnerships set link_streaks = new_val
+  where id = target_partnership_id and (requester_id = auth.uid() or recipient_id = auth.uid());
+end;
+$$;
+grant execute on function public.set_partner_link_streaks to authenticated;
 
 -- Admin-only usage stats
 create or replace function public.get_admin_stats()
@@ -435,8 +461,7 @@ grant select, insert, update on public.profiles to authenticated;
 grant select, insert, update, delete on public.food_logs to authenticated;
 grant select, insert, update, delete on public.saved_meals to authenticated;
 grant select, insert, update, delete on public.activity_logs to authenticated;
-grant select on public.accountability_groups to authenticated;
-grant select on public.group_members to authenticated;
+grant select on public.partnerships to authenticated;
 grant insert on public.login_events to authenticated;
 grant select on public.foods to authenticated, anon;
 

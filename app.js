@@ -57,9 +57,8 @@ let state = {
   realName: '',
   email: '',
   currentStreak: 0,
-  myGroup: [],          // other rows from get_my_group() (includes self)
-  pendingInvites: [],   // rows from get_my_pending_invites() — invites waiting on you
-  linkStreaks: true,
+  partners: [],          // rows from get_my_partners() — each an independent pairwise link
+  pendingInvites: [],   // rows from get_my_pending_requests() — requests waiting on you
 };
 
 // Expanded food database, tagged by which goal each food best supports.
@@ -454,7 +453,7 @@ async function enterApp() {
     loadSavedMeals(),
     loadHistory(),
     loadLeaderboard(),
-    loadMyGroup(),
+    loadPartners(),
     loadPendingInvites(),
   ]);
 
@@ -744,16 +743,14 @@ async function loadLeaderboard() {
   globalLeaderboard = error ? [] : data;
 }
 
-async function loadMyGroup() {
-  const { data, error } = await sb.rpc('get_my_group');
-  if (error) console.error('loadMyGroup failed:', error.message);
-  state.myGroup = error ? [] : data;
-  const mine = state.myGroup.find(m => m.user_id === currentUser.id);
-  state.linkStreaks = mine ? mine.link_streaks : true;
+async function loadPartners() {
+  const { data, error } = await sb.rpc('get_my_partners');
+  if (error) console.error('loadPartners failed:', error.message);
+  state.partners = error ? [] : data;
 }
 
 async function loadPendingInvites() {
-  const { data, error } = await sb.rpc('get_my_pending_invites');
+  const { data, error } = await sb.rpc('get_my_pending_requests');
   if (error) console.error('loadPendingInvites failed:', error.message);
   state.pendingInvites = error ? [] : data;
 }
@@ -776,21 +773,21 @@ function renderPendingInvites() {
   panel.style.display = 'block';
   listEl.innerHTML = state.pendingInvites.map(inv => `
     <div class="leader-row">
-      <div style="flex:1; font-weight:600; font-size:13.5px;">${escapeHtml(inv.invited_by)} invited you</div>
-      <button class="btn-add btn-secondary" style="width:auto; grid-column:auto; margin:0; padding:8px 14px;" onclick="respondToInvite(${inv.group_id}, true)">Accept</button>
-      <button class="btn-outline" style="width:auto; margin:0 0 0 8px; padding:8px 14px;" onclick="respondToInvite(${inv.group_id}, false)">Decline</button>
+      <div style="flex:1; font-weight:600; font-size:13.5px;">${escapeHtml(inv.from_name)} wants to be accountability partners</div>
+      <button class="btn-add btn-secondary" style="width:auto; grid-column:auto; margin:0; padding:8px 14px;" onclick="respondToInvite(${inv.request_id}, true)">Accept</button>
+      <button class="btn-outline" style="width:auto; margin:0 0 0 8px; padding:8px 14px;" onclick="respondToInvite(${inv.request_id}, false)">Decline</button>
     </div>`).join('');
 }
 
-async function respondToInvite(groupId, accept) {
-  const { error } = await sb.rpc('respond_to_partner_request', { target_group_id: groupId, accept });
+async function respondToInvite(requestId, accept) {
+  const { error } = await sb.rpc('respond_to_partner_request', { request_id: requestId, accept });
   if (error) { alert('Something went wrong: ' + error.message); return; }
-  await Promise.all([loadPendingInvites(), loadMyGroup()]);
+  await Promise.all([loadPendingInvites(), loadPartners()]);
   renderPendingInvites();
   renderPartners();
 }
 
-// Type-ahead partner search (case-insensitive, matches anywhere in the name)
+// Type-ahead partner search (case-insensitive, matches the START of a name)
 let partnerSearchTimeout = null;
 document.getElementById('partner-username-input').addEventListener('input', (e) => {
   const query = e.target.value.trim();
@@ -839,7 +836,7 @@ function renderPodium() {
 
 function renderLeaderboard() {
   renderPodium();
-  const partnerIds = new Set(state.myGroup.map(m => m.user_id));
+  const partnerIds = new Set((state.partners || []).map(p => p.user_id));
   document.getElementById('leaderboard-list').innerHTML = globalLeaderboard.map((d, i) => `
     <div class="leader-row ${d.id === currentUser.id || partnerIds.has(d.id) ? 'partner' : ''}">
       <div class="rank">${i + 1}${i < 5 ? ` ${STAR_ICON}` : ''}</div>
@@ -850,70 +847,65 @@ function renderLeaderboard() {
 }
 
 function renderPartners() {
-  const others = state.myGroup.filter(m => m.user_id !== currentUser.id);
-  const mine = state.myGroup.find(m => m.user_id === currentUser.id);
+  const partners = state.partners || [];
   const listEl = document.getElementById('partner-list');
   const emptyEl = document.getElementById('partner-empty');
 
-  if (!others.length) {
+  if (!partners.length) {
     listEl.innerHTML = '';
     if (emptyEl) emptyEl.style.display = 'block';
-  } else {
-    if (emptyEl) emptyEl.style.display = 'none';
-    listEl.innerHTML = others.map(p => `
-      <div class="leader-row">
-        <div class="avatar-sm">${escapeHtml((p.display_name || 'u')[0].toUpperCase())}</div>
-        <div style="flex:1; font-weight:600; font-size:13.5px;">${escapeHtml(p.display_name)}</div>
-        <div style="font-size:12px; color:var(--ink-soft); font-family:var(--font-mono); margin-right:8px;">🔥 ${p.current_streak}d</div>
-        <button class="log-item-remove" data-id="${p.user_id}" aria-label="Remove ${escapeHtml(p.display_name)}" title="Remove partner">×</button>
-      </div>`).join('');
-
-    listEl.querySelectorAll('.log-item-remove').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        if (!confirm('Remove this person from your accountability group?')) return;
-        await sb.rpc('remove_accountability_partner', { target_user_id: btn.dataset.id });
-        await loadMyGroup();
-        renderPartners();
-      });
-    });
+    return;
   }
+  if (emptyEl) emptyEl.style.display = 'none';
 
-  const leaveWrap = document.getElementById('leave-group-wrap');
-  if (leaveWrap) leaveWrap.style.display = mine ? 'block' : 'none';
+  listEl.innerHTML = partners.map(p => `
+    <div class="leader-row" style="flex-wrap:wrap;">
+      <div class="avatar-sm">${escapeHtml((p.display_name || 'u')[0].toUpperCase())}</div>
+      <div style="flex:1; font-weight:600; font-size:13.5px;">${escapeHtml(p.display_name)}</div>
+      <div style="font-size:12px; color:var(--ink-soft); font-family:var(--font-mono); margin-right:10px;">🔥 ${p.current_streak}d</div>
+      <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--ink-soft); margin-right:8px; cursor:pointer;">
+        Linked streaks
+        <button class="toggle partner-link-toggle ${p.link_streaks ? 'on' : ''}" data-partnership-id="${p.partnership_id}" style="width:32px; height:18px;" title="If off, missing your goal won't affect this person's streak (and theirs won't affect yours)">
+          <div class="knob" style="width:14px; height:14px;"></div>
+        </button>
+      </label>
+      <button class="log-item-remove" data-partnership-id="${p.partnership_id}" aria-label="Remove ${escapeHtml(p.display_name)}" title="Remove partner">×</button>
+    </div>`).join('');
 
-  const toggleEl = document.getElementById('link-streak-toggle');
-  toggleEl.classList.toggle('on', !!state.linkStreaks);
-}
+  listEl.querySelectorAll('.partner-link-toggle').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const newVal = !btn.classList.contains('on');
+      btn.classList.toggle('on', newVal);
+      await sb.rpc('set_partner_link_streaks', { target_partnership_id: btn.dataset.partnershipId, new_val: newVal });
+      const p = state.partners.find(x => String(x.partnership_id) === btn.dataset.partnershipId);
+      if (p) p.link_streaks = newVal;
+    });
+  });
 
-async function leaveGroup() {
-  if (!confirm("Leave your accountability group? You'll need a new invite to join one again.")) return;
-  await sb.rpc('remove_accountability_partner', { target_user_id: currentUser.id });
-  await loadMyGroup();
-  renderPartners();
+  listEl.querySelectorAll('.log-item-remove').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remove this accountability partner? This only affects the two of you.')) return;
+      await sb.rpc('remove_partner', { target_partnership_id: btn.dataset.partnershipId });
+      await loadPartners();
+      renderPartners();
+    });
+  });
 }
 
 async function addPartner() {
   const nameEl = document.getElementById('partner-username-input');
   const username = nameEl.value.trim();
   if (!username) return;
-  const { data, error } = await sb.rpc('add_accountability_partner', { friend_username: username });
-  if (error) { alert('Something went wrong sending that invite.'); return; }
+  const { data, error } = await sb.rpc('send_partner_request', { friend_username: username });
+  if (error) { alert('Something went wrong sending that request.'); return; }
   if (data === 'not_found') { alert('User not found.'); return; }
   if (data === 'self') { alert("You can't add yourself."); return; }
-  if (data === 'full') { alert('This group already has 4 people — the max.'); return; }
-  if (data === 'already') { alert('You already have a pending or accepted invite with that person.'); return; }
+  if (data === 'full') { alert('You already have 4 accountability partners — the max.'); return; }
+  if (data === 'their_full') { alert('That person already has 4 accountability partners.'); return; }
+  if (data === 'already') { alert('You already have a pending or accepted request with that person.'); return; }
   nameEl.value = '';
   document.getElementById('partner-search-dropdown').classList.remove('show');
-  alert('Invite sent — they need to accept it before you show up as partners.');
-  await loadMyGroup();
-  renderPartners();
-}
-
-async function toggleLinkStreaks(el) {
-  const newVal = !el.classList.contains('on');
-  el.classList.toggle('on', newVal);
-  state.linkStreaks = newVal;
-  await sb.rpc('set_link_streaks', { new_val: newVal });
+  alert('Request sent — they need to accept it before you show up as partners.');
 }
 
 // ============================================
@@ -942,7 +934,7 @@ async function saveAccountProfile() {
   if (error) { alert('Could not save: ' + error.message); return; }
   state.displayName = newDisplayName;
   await loadLeaderboard();
-  await loadMyGroup();
+  await loadPartners();
   renderLeaderboard();
   renderPartners();
 }
