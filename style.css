@@ -377,6 +377,11 @@ input, select { font-family: inherit; }
 .nav-item .ic { width: 18px; height: 18px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .nav-item .ic svg { width: 17px; height: 17px; }
 .nav-item.active { background: var(--matcha-soft); color: var(--matcha); font-weight: 600; }
+.nav-badge {
+  margin-left: auto; background: var(--berry); color: #fff; font-family: var(--font-mono);
+  font-size: 10.5px; font-weight: 700; border-radius: 999px; min-width: 18px; height: 18px;
+  display: flex; align-items: center; justify-content: center; padding: 0 5px;
+}
 
 .overlay {
   position: fixed; inset: 0; background: rgba(31,42,30,0.28);

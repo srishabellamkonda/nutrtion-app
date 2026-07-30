@@ -466,6 +466,14 @@ async function enterApp() {
   renderGoalGuidance();
   renderFoodDb();
   if (state.isAdmin) loadAdminStats();
+
+  // Check for new accountability invites periodically, since there's no
+  // live/realtime push — this just keeps the sidebar badge honest without
+  // requiring the person to log out and back in.
+  setInterval(async () => {
+    await loadPendingInvites();
+    renderPendingInvites();
+  }, 30000);
 }
 
 // ============================================
@@ -751,7 +759,15 @@ async function loadPendingInvites() {
 function renderPendingInvites() {
   const panel = document.getElementById('pending-invites-panel');
   const listEl = document.getElementById('pending-invites-list');
-  if (!state.pendingInvites || !state.pendingInvites.length) {
+  const badge = document.getElementById('accountability-badge');
+  const count = state.pendingInvites ? state.pendingInvites.length : 0;
+
+  if (badge) {
+    badge.style.display = count > 0 ? 'flex' : 'none';
+    badge.textContent = count;
+  }
+
+  if (!count) {
     panel.style.display = 'none';
     return;
   }
