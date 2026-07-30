@@ -319,11 +319,13 @@ input, select { font-family: inherit; }
   border-bottom: 1px solid var(--line);
 }
 .hamburger {
-  width: 38px; height: 38px; border-radius: 10px; background: none; border: none;
+  width: 40px; height: 40px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   flex-shrink: 0;
 }
 .hamburger span { width: 19px; height: 2px; background: var(--ink); border-radius: 2px; }
+.hamburger:hover { background: var(--matcha-soft); }
+.hamburger:hover span { background: var(--matcha); }
 .topbar .brand { display: flex; align-items: center; gap: 8px; }
 .topbar .brand-mark { color: var(--citrus); font-size: 12px; }
 .topbar .brand-name { font-family: var(--font-display); font-weight: 600; font-size: 19px; }
@@ -348,6 +350,13 @@ input, select { font-family: inherit; }
   padding: 16px 12px; overflow-y: auto;
 }
 .sidebar.open { transform: translateX(0); }
+.sidebar-close {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; margin: 0 0 10px auto;
+  background: var(--base); border: 1px solid var(--line); border-radius: 8px;
+  font-size: 18px; line-height: 1; color: var(--ink-soft);
+}
+.sidebar-close:hover { color: var(--berry); border-color: var(--berry-soft); background: var(--berry-soft); }
 .nav-item {
   width: 100%; display: flex; align-items: center; gap: 12px;
   padding: 11px 14px; border-radius: 10px; margin-bottom: 3px;
@@ -568,6 +577,7 @@ input, select { font-family: inherit; }
 @media (min-width: 1024px) {
   .hamburger { display: none; }
   .overlay { display: none; }
+  .sidebar-close { display: none; }
 
   .sidebar {
     transform: none;

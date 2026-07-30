@@ -208,6 +208,7 @@
 
   <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
   <nav class="sidebar" id="sidebar">
+    <button class="sidebar-close" onclick="toggleSidebar()" aria-label="Close menu">×</button>
     <button class="nav-item active" data-page="tracker" onclick="goPage('tracker')"><span class="ic"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="7"/><path d="M9 9V2.3A7 7 0 0 1 15.6 9H9z" fill="currentColor" stroke="none"/></svg></span>Tracker</button>
     <button class="nav-item" data-page="progress" onclick="goPage('progress')"><span class="ic"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14l4-4 3 3 6-7"/><path d="M11 6h4v4"/></svg></span>Progress & History</button>
     <button class="nav-item" data-page="goals" onclick="goPage('goals')"><span class="ic"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="9" r="7"/><circle cx="9" cy="9" r="4"/><circle cx="9" cy="9" r="1" fill="currentColor" stroke="none"/></svg></span>Goals & Settings</button>
