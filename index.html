@@ -13,79 +13,70 @@
 
 <div class="grain"></div>
 
-<!-- ============ LANDING PAGE ============ -->
+<!-- ============ PUBLIC LANDING PAGE ============ -->
 <div id="landing-screen">
-  <nav class="landing-nav">
+  <header class="landing-nav">
     <div class="brand"><span class="brand-mark">●</span><span class="brand-name">NutriSync</span></div>
     <div class="landing-nav-actions">
-      <button class="btn-outline btn-nav" onclick="goToAuth('login')">Log In</button>
-      <button class="btn-primary btn-nav" onclick="goToAuth('signup')">Sign Up</button>
+      <button class="btn-outline btn-inline" onclick="showAuth(false)">Log In</button>
+      <button class="btn-primary btn-inline" onclick="showAuth(true)">Sign Up</button>
     </div>
-  </nav>
+  </header>
 
   <section class="landing-hero">
-    <p class="eyebrow">no guilt, just the picture</p>
+    <p class="eyebrow">nutrition, without the noise</p>
     <h1>Your plate,<br>in balance.</h1>
-    <p class="landing-sub">NutriSync helps you track meals, hit targets built around your goals, and stay accountable — without obsessing over every gram.</p>
-    <div class="landing-cta">
-      <button class="btn-primary btn-cta" onclick="goToAuth('signup')">Get started free</button>
-      <button class="btn-outline btn-cta" onclick="goToAuth('login')">I already have an account</button>
-    </div>
-    <div class="landing-plate-preview">
-      <svg viewBox="0 0 320 320" aria-hidden="true">
-        <circle cx="160" cy="160" r="150" class="plate-rim" />
-        <circle cx="160" cy="160" r="150" class="plate-track" />
-        <circle cx="160" cy="160" r="150" fill="none" stroke="#4B7752" stroke-width="22" stroke-dasharray="230 713" transform="rotate(-90 160 160)"/>
-        <circle cx="160" cy="160" r="150" fill="none" stroke="#E8873A" stroke-width="22" stroke-dasharray="170 713" stroke-dashoffset="-230" transform="rotate(-90 160 160)"/>
-        <circle cx="160" cy="160" r="150" fill="none" stroke="#A8456B" stroke-width="22" stroke-dasharray="90 713" stroke-dashoffset="-400" transform="rotate(-90 160 160)"/>
-        <circle cx="160" cy="160" r="88" class="plate-well" />
-      </svg>
-      <div class="landing-plate-center">
-        <span class="landing-plate-cal">1,540</span>
-        <span class="landing-plate-cal-label">of 2,000 cal</span>
-      </div>
+    <p class="hero-sub" style="max-width:44ch; margin:0 auto 26px;">NutriSync is a simple calorie and macro tracker that shows your day as a plate filling up — not a spreadsheet. Set a goal, log your food, and watch it come together.</p>
+    <div class="landing-hero-actions">
+      <button class="btn-primary btn-inline" onclick="showAuth(true)">Get started free</button>
+      <button class="btn-outline btn-inline" onclick="showAuth(false)">I already have an account</button>
     </div>
   </section>
 
-  <section class="landing-features">
-    <h2>How it works</h2>
-    <div class="feature-grid">
+  <section class="landing-section">
+    <p class="eyebrow" style="text-align:center;">what is nutrisync?</p>
+    <h2 class="landing-h2">A calorie tracker that actually feels calm.</h2>
+    <p class="landing-p">Most food trackers feel like homework. NutriSync turns your day into one simple picture — a plate that fills in as you log — so you always know where you stand at a glance, without digging through menus.</p>
+  </section>
+
+  <section class="landing-section">
+    <h2 class="landing-h2" style="text-align:center;">Everything you need, nothing you don't</h2>
+    <div class="landing-features">
       <div class="feature-card">
         <div class="feature-ic">🍽️</div>
-        <h3>Log in seconds</h3>
-        <p>Add a food with its calories and macros, and watch your plate fill in in real time.</p>
+        <h3>The plate view</h3>
+        <p>Your calories and macros, visualized as a single plate that fills in as you log meals.</p>
       </div>
       <div class="feature-card">
         <div class="feature-ic">🎯</div>
         <h3>Goals that fit you</h3>
-        <p>A quick setup sets calorie and macro targets around your goal — lose, gain, maintain, or build muscle.</p>
+        <p>Tell us your goal — lose, gain, maintain, or build muscle — and we calculate your targets.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-ic">📈</div>
-        <h3>See your progress</h3>
-        <p>Build a streak and look back on your history, day by day.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-ic">📌</div>
-        <h3>Save your go-tos</h3>
-        <p>One-click add for the meals you eat again and again.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-ic">🔍</div>
-        <h3>Built-in food database</h3>
-        <p>Search common foods instead of typing macros from scratch every time.</p>
+        <div class="feature-ic">🔖</div>
+        <h3>Saved meals</h3>
+        <p>Log a favorite once, then add it again in one tap next time.</p>
       </div>
       <div class="feature-card">
         <div class="feature-ic">🏆</div>
-        <h3>Stay accountable</h3>
-        <p>Bring a friend along and keep each other on track with shared streaks.</p>
+        <h3>Accountability</h3>
+        <p>Add friends, compare streaks, and keep each other honest — together.</p>
       </div>
     </div>
   </section>
 
-  <section class="landing-final-cta">
-    <h2>Ready to see your plate?</h2>
-    <button class="btn-primary btn-cta" onclick="goToAuth('signup')">Create your free account</button>
+  <section class="landing-section">
+    <p class="eyebrow" style="text-align:center;">how it works</p>
+    <div class="landing-steps">
+      <div class="step-card"><div class="step-num">1</div><h3>Create your account</h3><p>Sign up and answer a few quick questions about you.</p></div>
+      <div class="step-card"><div class="step-num">2</div><h3>Get your targets</h3><p>We calculate your daily calorie and macro goals instantly.</p></div>
+      <div class="step-card"><div class="step-num">3</div><h3>Log &amp; track</h3><p>Add food as you go and watch your plate fill in through the day.</p></div>
+    </div>
+  </section>
+
+  <section class="landing-section landing-cta">
+    <h2 class="landing-h2">Ready to see your plate?</h2>
+    <button class="btn-primary btn-inline" onclick="showAuth(true)">Create your free account</button>
   </section>
 
   <footer class="footer"><p>NutriSync — built by you, for you.</p></footer>
@@ -94,7 +85,7 @@
 <!-- ============ AUTH SCREEN ============ -->
 <div id="auth-screen" style="display:none;">
   <div class="auth-card">
-    <a class="auth-back" onclick="showLanding()">← Back to home</a>
+    <button class="btn-ghost" style="margin-bottom:6px;" onclick="backToLanding()">← Back</button>
     <div class="auth-mark"></div>
     <h1>NutriSync</h1>
     <p class="auth-sub" id="auth-subtitle">Log in to see your plate.</p>
@@ -138,10 +129,33 @@
     </div>
 
     <div class="onboard-step" id="step-2" style="display:none;">
-      <h2>Height & weight</h2>
+      <h2>Height &amp; weight</h2>
       <p class="hint">Used to estimate your calorie needs.</p>
-      <div class="field"><label>Height (in)</label><input type="number" id="ob-height" placeholder="66"></div>
-      <div class="field"><label>Current weight (lb)</label><input type="number" id="ob-weight" placeholder="150"></div>
+
+      <div class="field">
+        <label>Height</label>
+        <div class="unit-row">
+          <button class="unit-btn selected" data-unit="imperial" onclick="setHeightUnit('imperial', this)">ft/in</button>
+          <button class="unit-btn" data-unit="metric" onclick="setHeightUnit('metric', this)">cm</button>
+        </div>
+        <div id="height-imperial" class="two-col" style="margin-top:8px;">
+          <input type="number" id="ob-height-ft" placeholder="Feet">
+          <input type="number" id="ob-height-in" placeholder="Inches">
+        </div>
+        <div id="height-metric" class="two-col" style="display:none; margin-top:8px;">
+          <input type="number" id="ob-height-cm" placeholder="Centimeters">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Current weight</label>
+        <div class="unit-row">
+          <button class="unit-btn selected" data-unit="lbs" onclick="setWeightUnit('lbs', this)">lbs</button>
+          <button class="unit-btn" data-unit="kg" onclick="setWeightUnit('kg', this)">kg</button>
+        </div>
+        <input type="number" id="ob-weight" placeholder="150" style="margin-top:8px;">
+      </div>
+
       <div class="field"><label>Roughly how many calories do you eat now, per day?</label><input type="number" id="ob-cals" placeholder="2000"></div>
     </div>
 
@@ -154,7 +168,7 @@
         <button class="goal-opt" onclick="selectGoal('maintain', this)">Maintain</button>
         <button class="goal-opt" onclick="selectGoal('muscle', this)">Gain muscle</button>
       </div>
-      <div class="field" style="margin-top:14px;"><label>Target weight (lb) — optional</label><input type="number" id="ob-target" placeholder="140"></div>
+      <div class="field" style="margin-top:14px;"><label>Target weight — optional</label><input type="number" id="ob-target" placeholder="140"></div>
     </div>
 
     <div class="onboard-step" id="step-4" style="display:none;">
@@ -179,177 +193,204 @@
   <header class="topbar">
     <button class="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
     <div class="brand"><span class="brand-mark">●</span><span class="brand-name">NutriSync</span></div>
+    <div class="topbar-cal" id="topbar-cal-wrap">
+      <span class="fire">🔥</span><span id="topbar-cal">0</span><span class="topbar-cal-of">/ <span id="topbar-cal-goal">2000</span> kcal</span>
+    </div>
     <div class="topbar-date" id="today-date"></div>
   </header>
 
   <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
   <nav class="sidebar" id="sidebar">
     <button class="nav-item active" data-page="tracker" onclick="goPage('tracker')"><span class="ic">🍽️</span>Tracker</button>
-    <button class="nav-item" data-page="progress" onclick="goPage('progress')"><span class="ic">📈</span>Progress & History</button>
-    <button class="nav-item" data-page="goals" onclick="goPage('goals')"><span class="ic">⚙️</span>Goals & Settings</button>
-    <button class="nav-item" data-page="saved" onclick="goPage('saved')"><span class="ic">📌</span>Saved Meals</button>
-    <button class="nav-item" data-page="search" onclick="goPage('search')"><span class="ic">🔍</span>Food Database</button>
+    <button class="nav-item" data-page="progress" onclick="goPage('progress')"><span class="ic">🌱</span>Progress & History</button>
+    <button class="nav-item" data-page="goals" onclick="goPage('goals')"><span class="ic">🎯</span>Goals & Settings</button>
+    <button class="nav-item" data-page="saved" onclick="goPage('saved')"><span class="ic">🔖</span>Saved Meals</button>
+    <button class="nav-item" data-page="search" onclick="goPage('search')"><span class="ic">🔎</span>Food Database</button>
     <button class="nav-item" data-page="accountability" onclick="goPage('accountability')"><span class="ic">🏆</span>Accountability</button>
-    <button class="nav-item" data-page="account" onclick="goPage('account')"><span class="ic">👤</span>Account</button>
+    <button class="nav-item" data-page="account" onclick="goPage('account')"><span class="ic">🙂</span>Account</button>
   </nav>
 
   <main class="wrap">
+    <div class="wrap-center">
 
-    <!-- ---------- TRACKER (original plate, unchanged) ---------- -->
-    <div class="page active" id="page-tracker">
-      <section class="hero">
-        <div class="hero-text">
-          <p class="eyebrow">today's plate</p>
-          <h1>Balance,<br>not perfection.</h1>
-          <p class="hero-sub">Log what you eat. Watch your plate fill in. No guilt, just the picture.</p>
+      <!-- ---------- TRACKER ---------- -->
+      <div class="page active" id="page-tracker">
+        <section class="hero">
+          <div class="hero-text">
+            <p class="eyebrow">today's plate</p>
+            <h1>Balance,<br>not perfection.</h1>
+            <p class="hero-sub">Log what you eat. Watch your plate fill in. No guilt, just the picture.</p>
+          </div>
+          <div class="plate-wrap">
+            <svg class="plate" viewBox="0 0 320 320" aria-hidden="true">
+              <circle cx="160" cy="160" r="150" class="plate-rim" />
+              <circle cx="160" cy="160" r="150" class="plate-track" />
+              <g id="plate-arcs" transform="rotate(-90 160 160)"></g>
+              <circle cx="160" cy="160" r="88" class="plate-well" />
+            </svg>
+            <div class="plate-center">
+              <span class="plate-cal" id="cal-total">0</span>
+              <span class="plate-cal-label">of <span id="cal-goal">2000</span> cal</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="macros" id="macro-legend"></section>
+
+        <section class="panel add-panel">
+          <h2>Add something</h2>
+          <form id="add-form" class="add-form">
+            <div class="field field-name"><label for="food-name">Food</label><input type="text" id="food-name" placeholder="e.g. Greek yogurt bowl" required></div>
+            <div class="field"><label for="food-cal">Calories</label><input type="number" id="food-cal" min="0" placeholder="0" required></div>
+            <div class="field"><label for="food-protein">Protein (g)</label><input type="number" id="food-protein" min="0" placeholder="0"></div>
+            <div class="field"><label for="food-carbs">Carbs (g)</label><input type="number" id="food-carbs" min="0" placeholder="0"></div>
+            <div class="field"><label for="food-fat">Fat (g)</label><input type="number" id="food-fat" min="0" placeholder="0"></div>
+            <div class="field" style="grid-column:1/-1;">
+              <label for="food-save-mode">Saving</label>
+              <select id="food-save-mode">
+                <option value="none">Don't save — just log it today</option>
+                <option value="new">Save as a new meal</option>
+                <option value="existing">Add to an existing saved meal</option>
+              </select>
+            </div>
+            <div class="field" id="existing-meal-wrap" style="display:none; grid-column:1/-1;">
+              <label for="food-existing-meal">Which saved meal?</label>
+              <select id="food-existing-meal"></select>
+            </div>
+            <button type="submit" class="btn-add">Add to plate</button>
+          </form>
+        </section>
+
+        <section class="panel log-panel">
+          <div class="log-header"><h2>Today's log</h2><button id="clear-day" class="btn-ghost">Clear day</button></div>
+          <ul id="log-list" class="log-list"></ul>
+          <p id="log-empty" class="log-empty">Nothing logged yet — your plate is waiting.</p>
+        </section>
+      </div>
+
+      <!-- ---------- PROGRESS & HISTORY ---------- -->
+      <div class="page" id="page-progress">
+        <h1 class="page-title">Progress & History</h1>
+        <div class="panel">
+          <h3>Your streak</h3>
+          <div id="progress-streak"></div>
         </div>
-        <div class="plate-wrap">
-          <svg class="plate" viewBox="0 0 320 320" aria-hidden="true">
-            <circle cx="160" cy="160" r="150" class="plate-rim" />
-            <circle cx="160" cy="160" r="150" class="plate-track" />
-            <g id="plate-arcs" transform="rotate(-90 160 160)"></g>
-            <circle cx="160" cy="160" r="88" class="plate-well" />
-          </svg>
-          <div class="plate-center">
-            <span class="plate-cal" id="cal-total">0</span>
-            <span class="plate-cal-label">of <span id="cal-goal">2000</span> cal</span>
+        <div class="panel">
+          <h3>Day-by-day history</h3>
+          <div id="progress-history"></div>
+          <p id="progress-empty" class="log-empty">You haven't logged anything yet. Once you track a few days, they'll show up here.</p>
+        </div>
+      </div>
+
+      <!-- ---------- GOALS & SETTINGS ---------- -->
+      <div class="page" id="page-goals">
+        <h1 class="page-title">Goals & Settings</h1>
+
+        <div class="panel">
+          <h2>Your daily goals</h2>
+          <form id="goals-form" class="goals-form">
+            <div class="field"><label for="goal-cal">Calories</label><input type="number" id="goal-cal" min="0"></div>
+            <div class="field"><label for="goal-protein">Protein (g)</label><input type="number" id="goal-protein" min="0"></div>
+            <div class="field"><label for="goal-carbs">Carbs (g)</label><input type="number" id="goal-carbs" min="0"></div>
+            <div class="field"><label for="goal-fat">Fat (g)</label><input type="number" id="goal-fat" min="0"></div>
+            <button type="submit" class="btn-add btn-secondary">Save goals</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h3>Guidance for your goal</h3>
+          <p id="goal-guidance" style="font-size:13.5px; color:var(--ink-soft); line-height:1.6; margin:0;"></p>
+        </div>
+
+        <div class="panel">
+          <h3>Recommended foods</h3>
+          <div id="goal-food-pills"></div>
+        </div>
+      </div>
+
+      <!-- ---------- SAVED MEALS ---------- -->
+      <div class="page" id="page-saved">
+        <h1 class="page-title">Saved Meals</h1>
+        <div class="panel">
+          <div id="saved-list" class="saved-list"></div>
+          <p id="saved-empty" class="log-empty">No saved meals yet — save one from the Tracker page.</p>
+        </div>
+      </div>
+
+      <!-- ---------- FOOD DATABASE ---------- -->
+      <div class="page" id="page-search">
+        <h1 class="page-title">Food Database</h1>
+        <input class="search-box" placeholder="Search foods (e.g. chicken breast, oats…)" oninput="filterFoodDb(this.value)">
+        <ul id="food-db-list" class="log-list"></ul>
+      </div>
+
+      <!-- ---------- ACCOUNTABILITY ---------- -->
+      <div class="page" id="page-accountability">
+        <h1 class="page-title">Accountability</h1>
+        <div class="panel">
+          <h3>Top streaks</h3>
+          <div id="podium"></div>
+          <div id="leaderboard-list"></div>
+        </div>
+        <div class="panel">
+          <h3>Your accountability group</h3>
+          <div id="partner-list"></div>
+          <p id="partner-empty" class="log-empty">No accountability partners yet — invite a friend to get started.</p>
+          <div class="field" style="margin-top:12px;">
+            <label>Friend's email</label>
+            <div style="display:flex; gap:8px;">
+              <input type="email" id="partner-email-input" placeholder="friend@example.com" style="flex:1;">
+              <button class="btn-add" style="width:auto; grid-column:auto; margin:0;" onclick="addPartner()">Add</button>
+            </div>
           </div>
         </div>
-      </section>
-
-      <section class="macros" id="macro-legend"></section>
-
-      <section class="panel add-panel">
-        <h2>Add something</h2>
-        <form id="add-form" class="add-form">
-          <div class="field field-name"><label for="food-name">Food</label><input type="text" id="food-name" placeholder="e.g. Greek yogurt bowl" required></div>
-          <div class="field"><label for="food-cal">Calories</label><input type="number" id="food-cal" min="0" placeholder="0" required></div>
-          <div class="field"><label for="food-protein">Protein (g)</label><input type="number" id="food-protein" min="0" placeholder="0"></div>
-          <div class="field"><label for="food-carbs">Carbs (g)</label><input type="number" id="food-carbs" min="0" placeholder="0"></div>
-          <div class="field"><label for="food-fat">Fat (g)</label><input type="number" id="food-fat" min="0" placeholder="0"></div>
-          <label class="save-check"><input type="checkbox" id="food-save"> Save this meal so I can add it again with one click</label>
-          <button type="submit" class="btn-add">Add to plate</button>
-        </form>
-      </section>
-
-      <section class="panel log-panel">
-        <div class="log-header"><h2>Today's log</h2><button id="clear-day" class="btn-ghost">Clear day</button></div>
-        <ul id="log-list" class="log-list"></ul>
-        <p id="log-empty" class="log-empty">Nothing logged yet — your plate is waiting.</p>
-      </section>
-    </div>
-
-    <!-- ---------- PROGRESS & HISTORY ---------- -->
-    <div class="page" id="page-progress">
-      <h1 class="page-title">Progress & History</h1>
-      <div class="panel">
-        <h3>Your streak</h3>
-        <div id="progress-streak"></div>
-      </div>
-      <div class="panel">
-        <h3>Day-by-day history</h3>
-        <div id="progress-history"></div>
-        <p id="progress-empty" class="log-empty">You haven't logged anything yet. Once you track a few days, they'll show up here.</p>
-      </div>
-    </div>
-
-    <!-- ---------- GOALS & SETTINGS ---------- -->
-    <div class="page" id="page-goals">
-      <h1 class="page-title">Goals & Settings</h1>
-
-      <div class="panel">
-        <h2>Your daily goals</h2>
-        <form id="goals-form" class="goals-form">
-          <div class="field"><label for="goal-cal">Calories</label><input type="number" id="goal-cal" min="0"></div>
-          <div class="field"><label for="goal-protein">Protein (g)</label><input type="number" id="goal-protein" min="0"></div>
-          <div class="field"><label for="goal-carbs">Carbs (g)</label><input type="number" id="goal-carbs" min="0"></div>
-          <div class="field"><label for="goal-fat">Fat (g)</label><input type="number" id="goal-fat" min="0"></div>
-          <button type="submit" class="btn-add btn-secondary">Save goals</button>
-        </form>
-      </div>
-
-      <div class="panel">
-        <h3>Guidance for your goal</h3>
-        <p id="goal-guidance" style="font-size:13.5px; color:var(--ink-soft); line-height:1.6; margin:0;"></p>
-      </div>
-
-      <div class="panel">
-        <h3>Recommended foods</h3>
-        <div id="goal-food-pills"></div>
-      </div>
-    </div>
-
-    <!-- ---------- SAVED MEALS ---------- -->
-    <div class="page" id="page-saved">
-      <h1 class="page-title">Saved Meals</h1>
-      <div class="panel">
-        <div id="saved-list" class="saved-list"></div>
-        <p id="saved-empty" class="log-empty">No saved meals yet — check the box when adding a food in Tracker.</p>
-      </div>
-    </div>
-
-    <!-- ---------- FOOD DATABASE ---------- -->
-    <div class="page" id="page-search">
-      <h1 class="page-title">Food Database</h1>
-      <input class="search-box" placeholder="Search foods (e.g. chicken breast, oats…)" oninput="filterFoodDb(this.value)">
-      <ul id="food-db-list" class="log-list"></ul>
-    </div>
-
-    <!-- ---------- ACCOUNTABILITY ---------- -->
-    <div class="page" id="page-accountability">
-      <h1 class="page-title">Accountability</h1>
-      <div class="panel">
-        <h3>Your streak</h3>
-        <div id="leaderboard-list"></div>
-        <p style="font-size:12px; color:var(--ink-soft); margin:10px 0 0;">This will show your accountability partners here too, once you add some — ranked by streak.</p>
-      </div>
-      <div class="panel">
-        <h3>Your accountability group</h3>
-        <div id="partner-list"></div>
-        <p id="partner-empty" class="log-empty">No accountability partners yet — invite a friend to get started.</p>
-        <button class="btn-add" style="margin-top:12px;" onclick="alert('Sending invites needs a real account system behind it — this button is just a placeholder for now.')">+ Invite a partner</button>
-      </div>
-      <div class="panel">
-        <div class="set-row" style="border-top:none;">
-          <div><div class="lbl">Link streaks with this group</div><div class="desc">If one of you misses your goal, everyone's streak resets. Recommended once you have partners.</div></div>
-          <button class="toggle" onclick="this.classList.toggle('on')"><div class="knob"></div></button>
+        <div class="panel">
+          <div class="set-row" style="border-top:none;">
+            <div><div class="lbl">Link streaks with this group</div><div class="desc">If one of you misses your goal, everyone's streak resets. Recommended once you have partners.</div></div>
+            <button class="toggle" id="link-streak-toggle" onclick="toggleLinkStreaks(this)"><div class="knob"></div></button>
+          </div>
         </div>
       </div>
+
+      <!-- ---------- ACCOUNT ---------- -->
+      <div class="page" id="page-account">
+        <h1 class="page-title">Account</h1>
+        <div class="panel">
+          <h3 style="display:flex; align-items:center; gap:8px;">Profile <span id="admin-badge" style="display:none;" class="badge-admin">Admin</span></h3>
+          <div class="field"><label>Display name (shown on podium)</label><input type="text" id="acc-display-name"></div>
+          <div class="field"><label>Real name</label><input type="text" id="acc-real-name" disabled></div>
+          <div class="field"><label>Email</label><input type="email" id="acc-email" disabled></div>
+          <button class="btn-add btn-secondary" style="margin-top:6px;" onclick="saveAccountProfile()">Save changes</button>
+        </div>
+        <div class="panel" id="admin-panel" style="display:none;">
+          <h3>Admin panel</h3>
+          <div class="stat-row"><div><div class="lbl">Total users</div><div class="desc">Signed up all-time</div></div><div class="val" id="admin-total-users">—</div></div>
+          <div class="stat-row"><div><div class="lbl">Active today</div><div class="desc">Logged in within 24h</div></div><div class="val" id="admin-active-today">—</div></div>
+          <div class="stat-row"><div><div class="lbl">Logins this week</div><div class="desc">Across all users</div></div><div class="val" id="admin-logins-week">—</div></div>
+        </div>
+        <div class="panel">
+          <button class="btn-primary btn-danger" onclick="logOut()">Log out</button>
+        </div>
+      </div>
+
     </div>
 
-    <!-- ---------- ACCOUNT ---------- -->
-    <div class="page" id="page-account">
-      <h1 class="page-title">Account</h1>
+    <!-- ---------- RIGHT RAIL (desktop only) ---------- -->
+    <aside class="wrap-right">
       <div class="panel">
-        <h3 style="display:flex; align-items:center; gap:8px;">Profile <span id="admin-badge" style="display:none;" class="badge-admin">Admin</span></h3>
-        <div class="field"><label>Display name (shown on podium)</label><input type="text" id="acc-display-name" placeholder="you"></div>
-        <div class="field"><label>Real name</label><input type="text" id="acc-real-name" placeholder="Your name"></div>
-        <div class="field"><label>Email</label><input type="email" id="acc-email" disabled></div>
-        <button class="btn-add btn-secondary" id="acc-save" style="margin-top:4px;">Save profile</button>
+        <h3>Today at a glance</h3>
+        <div id="rail-stats"></div>
       </div>
       <div class="panel">
-        <h3>Accountability partners</h3>
-        <p style="font-size:12px; color:var(--ink-soft); margin:0 0 10px;">Up to 4 people per group.</p>
-        <div id="account-partner-mgmt"></div>
+        <h3>Suggested foods</h3>
+        <p style="font-size:12px; color:var(--ink-soft); margin:0 0 10px;">Based on your goal.</p>
+        <div id="rail-suggestions"></div>
       </div>
-      <div class="panel" id="admin-panel" style="display:none;">
-        <h3>Admin panel</h3>
-        <p style="font-size:12px; color:var(--ink-soft); margin:0 0 12px;">There's no real backend yet, so this only reflects this one session — not actual signed-up users.</p>
-        <div class="stat-row"><div><div class="lbl">Total users</div><div class="desc">Signed up all-time</div></div><div class="val">1</div></div>
-        <div class="stat-row"><div><div class="lbl">Active today</div><div class="desc">Logged in within 24h</div></div><div class="val">1</div></div>
-        <div class="stat-row"><div><div class="lbl">Logins this week</div><div class="desc">Across all users</div></div><div class="val">1</div></div>
-      </div>
-      <div class="panel">
-        <button class="btn-primary btn-danger" onclick="logOut()">Log out</button>
-      </div>
-    </div>
-
+    </aside>
   </main>
 
   <footer class="footer"><p>NutriSync — built by you, for you.</p></footer>
 </div>
-
-<!-- ============ ADD FOOD MODAL (used by Food Database / Saved Meals quick-add is inline) ============ -->
 
 <script src="app.js"></script>
 </body>
