@@ -72,9 +72,8 @@ input, select { font-family: inherit; }
   background: var(--base);
   box-shadow: 0 2px 10px rgba(31,42,30,0.05);
 }
-.landing-nav .brand { display: flex; align-items: center; gap: 8px; }
-.brand-icon { height: 30px; width: auto; display: block; }
-.brand-wordmark { height: 18px; width: auto; display: block; }
+.landing-nav .brand { display: flex; align-items: center; }
+.brand-logo { height: 26px; width: auto; display: block; }
 .landing-nav-links { display: flex; gap: 26px; margin-left: auto; }
 .landing-nav-links a {
   color: var(--ink); text-decoration: none; font-weight: 500; font-size: 14px;
