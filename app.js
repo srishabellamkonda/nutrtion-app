@@ -43,10 +43,12 @@ const MACROS = [
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
 const CALORIE_BUFFER = 50;
+const MIN_CALORIES = 1200; // never recommend or accept a goal below this
 
 let state = {
   goals: { cal: 2000, protein: 120, carbs: 220, fat: 65 },
   todayEntries: [],   // [{id, name, cal, protein, carbs, fat}] — mirrors food_logs rows for today
+  activityEntries: [], // [{id, name, calories_burned, discount}] — mirrors activity_logs rows for today
   historyByDate: {},  // {'2026-07-28': totalCal} — for the Progress & History page
   savedMeals: [],      // mirrors saved_meals rows
   goalType: 'maintain',
@@ -127,6 +129,15 @@ function showAuth(signupMode) {
   applyAuthMode();
 }
 function backToLanding() { showLanding(); }
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  btn.querySelector('.eye-open').style.display = showing ? 'block' : 'none';
+  btn.querySelector('.eye-closed').style.display = showing ? 'none' : 'block';
+  btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+}
 
 let isSignup = false;
 function applyAuthMode() {
@@ -374,16 +385,17 @@ function obBack() {
 
 // Calorie + macro plan. Muscle gain is capped at a max +200 kcal
 // surplus over the person's current (maintenance-estimate) calories,
-// with protein raised higher than the other goals.
+// with protein raised higher than the other goals. No goal is ever
+// set below MIN_CALORIES (1200), regardless of goal type.
 function computePlan() {
   const weightKg = getWeightKg() || 68; // ~150lb fallback
   const maintenanceCals = parseFloat(document.getElementById('ob-cals').value) || 2000;
   let target = maintenanceCals;
 
-  if (state.goalType === 'lose') target = Math.max(1200, maintenanceCals - 500);
+  if (state.goalType === 'lose') target = maintenanceCals - 500;
   else if (state.goalType === 'gain') target = maintenanceCals + 300;
   else if (state.goalType === 'muscle') target = maintenanceCals + 200; // capped surplus
-  target = Math.round(target);
+  target = Math.max(MIN_CALORIES, Math.round(target));
 
   const proteinPerKg = state.goalType === 'muscle' ? 2.2 : (state.goalType === 'lose' ? 1.8 : 1.6);
   const protein = Math.round(weightKg * proteinPerKg);
@@ -393,8 +405,22 @@ function computePlan() {
   state.goals = { cal: target, protein, carbs, fat };
 
   document.getElementById('ob-summary-cals').textContent = target.toLocaleString() + ' cal / day';
-  document.getElementById('ob-summary-macros').innerHTML =
-    `Protein ${protein}g &nbsp;·&nbsp; Carbs ${carbs}g &nbsp;·&nbsp; Fat ${fat}g`;
+  let macrosHtml = `Protein ${protein}g &nbsp;·&nbsp; Carbs ${carbs}g &nbsp;·&nbsp; Fat ${fat}g`;
+
+  // Rough timeline estimate, only when a target weight and a lose/gain
+  // direction are both given. ~3,500 kcal ≈ 1 lb of body weight.
+  const targetWeightRaw = parseFloat(document.getElementById('ob-target').value);
+  if (targetWeightRaw && (state.goalType === 'lose' || state.goalType === 'gain')) {
+    const targetKg = obWeightUnit === 'kg' ? targetWeightRaw : targetWeightRaw * 0.453592;
+    const weightDiffKg = Math.abs(weightKg - targetKg);
+    const dailyDelta = Math.abs(maintenanceCals - target);
+    if (weightDiffKg > 0 && dailyDelta > 0) {
+      const totalCaloriesNeeded = weightDiffKg * 7700; // ~7,700 kcal per kg
+      const weeks = Math.max(1, Math.round(totalCaloriesNeeded / dailyDelta / 7));
+      macrosHtml += `<div style="margin-top:10px; padding-top:10px; border-top:1px solid var(--line);">At this pace, reaching your target could take roughly <strong>${weeks} week${weeks === 1 ? '' : 's'}</strong>. This is a rough estimate, not a guarantee — actual results vary person to person.</div>`;
+    }
+  }
+  document.getElementById('ob-summary-macros').innerHTML = macrosHtml;
 }
 
 // ============================================
@@ -415,6 +441,7 @@ async function enterApp() {
 
   await Promise.all([
     loadTodayEntries(),
+    loadTodayActivity(),
     loadSavedMeals(),
     loadHistory(),
     loadLeaderboard(),
@@ -459,6 +486,66 @@ async function loadTodayEntries() {
     id: r.id, name: r.name, cal: r.calories, protein: r.protein, carbs: r.carbs, fat: r.fat,
   }));
 }
+
+async function loadTodayActivity() {
+  const { data, error } = await sb.from('activity_logs')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .eq('log_date', todayKey())
+    .order('created_at', { ascending: true });
+  state.activityEntries = error ? [] : data.map(r => ({
+    id: r.id, name: r.name || 'Activity', calories_burned: r.calories_burned, discount: r.discount,
+  }));
+}
+
+function getDiscountedBurn() {
+  return state.activityEntries.filter(a => a.discount).reduce((s, a) => s + (Number(a.calories_burned) || 0), 0);
+}
+
+function renderActivity() {
+  const listEl = document.getElementById('activity-log-list');
+  if (!listEl) return;
+  if (!state.activityEntries.length) { listEl.innerHTML = ''; return; }
+  listEl.innerHTML = state.activityEntries.map(a => `
+    <div class="log-item">
+      <div>
+        <div class="log-item-name">${escapeHtml(a.name)}</div>
+        <div class="log-item-macros">${a.discount ? 'Added back to goal' : 'Tracked separately'}</div>
+      </div>
+      <div class="log-item-right">
+        <span class="log-item-cal">-${Math.round(a.calories_burned)} cal</span>
+        <button class="log-item-remove" data-id="${a.id}" aria-label="Remove ${escapeHtml(a.name)}">×</button>
+      </div>
+    </div>`).join('');
+
+  listEl.querySelectorAll('.log-item-remove').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await sb.from('activity_logs').delete().eq('id', btn.dataset.id);
+      state.activityEntries = state.activityEntries.filter(a => String(a.id) !== btn.dataset.id);
+      renderActivity();
+      renderPlate();
+    });
+  });
+}
+
+document.getElementById('activity-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('activity-name').value.trim() || 'Activity';
+  const cal = Number(document.getElementById('activity-cal').value) || 0;
+  const discount = document.getElementById('activity-discount').value === 'yes';
+  if (cal <= 0) return;
+
+  const { data, error } = await sb.from('activity_logs').insert({
+    user_id: currentUser.id, log_date: todayKey(), name, calories_burned: cal, discount,
+  }).select().single();
+
+  if (!error && data) {
+    state.activityEntries.push({ id: data.id, name, calories_burned: cal, discount });
+    renderActivity();
+    renderPlate();
+  }
+  e.target.reset();
+});
 
 async function loadHistory() {
   const since = new Date();
@@ -551,8 +638,14 @@ function fillGoalsForm() {
 
 document.getElementById('goals-form').addEventListener('submit', async (e) => {
   e.preventDefault();
+  let enteredCal = Number(document.getElementById('goal-cal').value) || 0;
+  if (enteredCal < MIN_CALORIES) {
+    alert(`For safety, calorie goals can't go below ${MIN_CALORIES}. Setting it to ${MIN_CALORIES}.`);
+    enteredCal = MIN_CALORIES;
+    document.getElementById('goal-cal').value = MIN_CALORIES;
+  }
   state.goals = {
-    cal: Number(document.getElementById('goal-cal').value) || 0,
+    cal: enteredCal,
     protein: Number(document.getElementById('goal-protein').value) || 0,
     carbs: Number(document.getElementById('goal-carbs').value) || 0,
     fat: Number(document.getElementById('goal-fat').value) || 0,
@@ -755,11 +848,12 @@ function getTodayTotals() {
 
 function renderPlate() {
   const totals = getTodayTotals();
+  const effectiveGoal = state.goals.cal + getDiscountedBurn();
 
   document.getElementById('cal-total').textContent = Math.round(totals.cal);
-  document.getElementById('cal-goal').textContent = state.goals.cal;
+  document.getElementById('cal-goal').textContent = effectiveGoal;
   document.getElementById('topbar-cal').textContent = Math.round(totals.cal);
-  document.getElementById('topbar-cal-goal').textContent = state.goals.cal;
+  document.getElementById('topbar-cal-goal').textContent = effectiveGoal;
 
   const macroCals = MACROS.map(m => (Number(totals[m.key]) || 0) * m.calPerGram);
   const macroCalSum = macroCals.reduce((a, b) => a + b, 0);
@@ -767,7 +861,7 @@ function renderPlate() {
   const arcsGroup = document.getElementById('plate-arcs');
   arcsGroup.innerHTML = '';
 
-  const fillFraction = state.goals.cal > 0 ? Math.min(totals.cal / state.goals.cal, 1) : 0;
+  const fillFraction = effectiveGoal > 0 ? Math.min(totals.cal / effectiveGoal, 1) : 0;
   let offsetSoFar = 0;
 
   MACROS.forEach((m, i) => {
@@ -785,13 +879,13 @@ function renderPlate() {
   });
 
   renderMacroLegend(totals);
-  renderRailStats(totals);
+  renderRailStats(totals, effectiveGoal);
 }
 
-function renderRailStats(totals) {
+function renderRailStats(totals, effectiveGoal) {
   const railEl = document.getElementById('rail-stats');
   if (!railEl) return;
-  const remainingCal = Math.max(0, state.goals.cal - totals.cal);
+  const remainingCal = Math.max(0, effectiveGoal - totals.cal);
   const remainingProtein = Math.max(0, state.goals.protein - totals.protein);
   railEl.innerHTML = `
     <div class="stat-row" style="border-top:none;"><div><div class="lbl">Calories left</div></div><div class="val">${Math.round(remainingCal)}</div></div>
@@ -951,6 +1045,7 @@ function renderProgress() {
 function renderAll() {
   renderPlate();
   renderLog();
+  renderActivity();
   renderSavedMeals();
   renderProgress();
   renderLeaderboard();

@@ -103,6 +103,24 @@ create policy "food_logs_owner_all" on food_logs
   for all using (user_id = auth.uid() or public.is_admin())
   with check (user_id = auth.uid());
 
+-- ---------- activity_logs (manually-logged exercise calories burned) ----------
+create table if not exists activity_logs (
+  id bigint generated always as identity primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  log_date date not null default current_date,
+  name text default 'Activity',
+  calories_burned numeric not null default 0,
+  discount boolean not null default false, -- true = add these back to today's calorie goal
+  created_at timestamptz default now()
+);
+create index if not exists activity_logs_user_date_idx on activity_logs (user_id, log_date);
+
+alter table activity_logs enable row level security;
+drop policy if exists "activity_logs_owner_all" on activity_logs;
+create policy "activity_logs_owner_all" on activity_logs
+  for all using (user_id = auth.uid() or public.is_admin())
+  with check (user_id = auth.uid());
+
 -- ---------- saved_meals ----------
 create table if not exists saved_meals (
   id bigint generated always as identity primary key,
