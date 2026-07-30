@@ -148,8 +148,16 @@ create table if not exists accountability_groups (
 create table if not exists group_members (
   group_id bigint references accountability_groups(id) on delete cascade,
   user_id uuid references auth.users(id) on delete cascade,
+  status text not null default 'accepted', -- 'pending' until the invitee accepts, then 'accepted'
   primary key (group_id, user_id)
 );
+alter table group_members add column if not exists status text not null default 'accepted';
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'group_members_status_check') then
+    alter table group_members add constraint group_members_status_check check (status in ('pending','accepted'));
+  end if;
+end $$;
 
 alter table accountability_groups enable row level security;
 alter table group_members enable row level security;
@@ -257,8 +265,8 @@ as $$
 $$;
 grant execute on function public.get_leaderboard to authenticated;
 
--- Add an accountability partner by their display name / username
--- (no email lookup — keeps this simple, with no email verification involved)
+-- Send an accountability invite by username. The other person shows up as
+-- "pending" until they accept — this does NOT add them right away.
 create or replace function public.add_accountability_partner(friend_username text)
 returns text
 language plpgsql
@@ -273,10 +281,10 @@ begin
   if friend_id is null then return 'not_found'; end if;
   if friend_id = auth.uid() then return 'self'; end if;
 
-  select group_id into my_group_id from group_members where user_id = auth.uid() limit 1;
+  select group_id into my_group_id from group_members where user_id = auth.uid() and status = 'accepted' limit 1;
   if my_group_id is null then
     insert into accountability_groups (created_by) values (auth.uid()) returning id into my_group_id;
-    insert into group_members (group_id, user_id) values (my_group_id, auth.uid());
+    insert into group_members (group_id, user_id, status) values (my_group_id, auth.uid(), 'accepted');
   end if;
 
   select count(*) into member_count from group_members where group_id = my_group_id;
@@ -286,13 +294,69 @@ begin
     return 'already';
   end if;
 
-  insert into group_members (group_id, user_id) values (my_group_id, friend_id);
+  -- keep this simple: someone can only be in (or pending for) one group at a time
+  if exists (select 1 from group_members where user_id = friend_id) then
+    return 'in_other_group';
+  end if;
+
+  insert into group_members (group_id, user_id, status) values (my_group_id, friend_id, 'pending');
   return 'ok';
 end;
 $$;
 grant execute on function public.add_accountability_partner to authenticated;
 
--- Get the caller's own accountability group (members + settings)
+-- Case-insensitive "type ahead" search for the Add Partner box.
+-- Returns only display_name (nothing private), and never yourself.
+create or replace function public.search_users(query text, limit_n int default 8)
+returns table(id uuid, display_name text)
+language sql
+security definer
+stable
+as $$
+  select id, display_name from profiles
+  where display_name is not null
+    and display_name ilike '%' || query || '%'
+    and id <> auth.uid()
+  order by display_name
+  limit limit_n;
+$$;
+grant execute on function public.search_users to authenticated;
+
+-- Pending invites waiting on the CALLER to accept/decline, with who sent them
+create or replace function public.get_my_pending_invites()
+returns table(group_id bigint, invited_by text)
+language sql
+security definer
+stable
+as $$
+  select gm.group_id, string_agg(p.display_name, ', ')
+  from group_members gm
+  join profiles p on p.id = gm.user_id
+  where gm.status = 'accepted'
+    and gm.group_id in (
+      select group_id from group_members where user_id = auth.uid() and status = 'pending'
+    )
+  group by gm.group_id;
+$$;
+grant execute on function public.get_my_pending_invites to authenticated;
+
+-- Accept or decline a pending invite
+create or replace function public.respond_to_partner_request(target_group_id bigint, accept boolean)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+  if accept then
+    update group_members set status = 'accepted' where group_id = target_group_id and user_id = auth.uid();
+  else
+    delete from group_members where group_id = target_group_id and user_id = auth.uid();
+  end if;
+end;
+$$;
+grant execute on function public.respond_to_partner_request to authenticated;
+
+-- Get the caller's own accountability group (accepted members + settings)
 create or replace function public.get_my_group()
 returns table(group_id bigint, link_streaks boolean, user_id uuid, display_name text, current_streak int)
 language sql
@@ -303,7 +367,8 @@ as $$
   from group_members gm
   join accountability_groups g on g.id = gm.group_id
   join profiles p on p.id = gm.user_id
-  where gm.group_id = (select group_id from group_members where user_id = auth.uid() limit 1);
+  where gm.status = 'accepted'
+    and gm.group_id = (select group_id from group_members where user_id = auth.uid() and status = 'accepted' limit 1);
 $$;
 grant execute on function public.get_my_group to authenticated;
 
@@ -315,7 +380,7 @@ security definer
 as $$
 declare gid bigint;
 begin
-  select group_id into gid from group_members where user_id = auth.uid() limit 1;
+  select group_id into gid from group_members where user_id = auth.uid() and status = 'accepted' limit 1;
   if gid is not null then
     update accountability_groups set link_streaks = new_val where id = gid;
   end if;

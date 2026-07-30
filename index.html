@@ -375,16 +375,21 @@
           <div id="podium"></div>
           <div id="leaderboard-list"></div>
         </div>
+        <div class="panel" id="pending-invites-panel" style="display:none;">
+          <h3>Invites waiting on you</h3>
+          <div id="pending-invites-list"></div>
+        </div>
         <div class="panel">
           <h3>Your accountability group</h3>
           <div id="partner-list"></div>
           <p id="partner-empty" class="log-empty">No accountability partners yet — invite a friend to get started.</p>
-          <div class="field" style="margin-top:12px;">
+          <div class="field" style="margin-top:12px; position:relative;">
             <label>Friend's username (their display name)</label>
             <div style="display:flex; gap:8px;">
-              <input type="text" id="partner-username-input" placeholder="leafy_jamie" style="flex:1;">
-              <button class="btn-add" style="width:auto; grid-column:auto; margin:0;" onclick="addPartner()">Add</button>
+              <input type="text" id="partner-username-input" placeholder="leafy_jamie" style="flex:1;" autocomplete="off">
+              <button class="btn-add" style="width:auto; grid-column:auto; margin:0;" onclick="addPartner()">Send invite</button>
             </div>
+            <div id="partner-search-dropdown" class="search-dropdown"></div>
           </div>
         </div>
         <div class="panel">

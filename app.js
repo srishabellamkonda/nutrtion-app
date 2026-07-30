@@ -58,6 +58,7 @@ let state = {
   email: '',
   currentStreak: 0,
   myGroup: [],          // other rows from get_my_group() (includes self)
+  pendingInvites: [],   // rows from get_my_pending_invites() — invites waiting on you
   linkStreaks: true,
 };
 
@@ -454,6 +455,7 @@ async function enterApp() {
     loadHistory(),
     loadLeaderboard(),
     loadMyGroup(),
+    loadPendingInvites(),
   ]);
 
   await recomputeStreak();
@@ -550,11 +552,13 @@ document.getElementById('activity-form').addEventListener('submit', async (e) =>
     user_id: currentUser.id, log_date: todayKey(), name, calories_burned: cal, discount,
   }).select().single();
 
-  if (!error && data) {
-    state.activityEntries.push({ id: data.id, name, calories_burned: cal, discount });
-    renderActivity();
-    renderPlate();
+  if (error) {
+    alert('Could not log that activity: ' + error.message);
+    return;
   }
+  state.activityEntries.push({ id: data.id, name, calories_burned: cal, discount });
+  renderActivity();
+  renderPlate();
   e.target.reset();
 });
 
@@ -600,9 +604,11 @@ document.getElementById('add-form').addEventListener('submit', async (e) => {
     name, calories: cal, protein, carbs, fat,
   }).select().single();
 
-  if (!error && data) {
-    state.todayEntries.push({ id: data.id, name, cal, protein, carbs, fat });
+  if (error) {
+    alert('Could not add that: ' + error.message);
+    return;
   }
+  state.todayEntries.push({ id: data.id, name, cal, protein, carbs, fat });
 
   if (saveMode === 'new') {
     await sb.from('saved_meals').insert({ user_id: currentUser.id, name, calories: cal, protein, carbs, fat });
@@ -714,11 +720,10 @@ async function logDbFood(i, filter) {
     user_id: currentUser.id, log_date: todayKey(),
     name: f.name, calories: f.cal, protein: f.protein, carbs: f.carbs, fat: f.fat,
   }).select().single();
-  if (!error && data) {
-    state.todayEntries.push({ id: data.id, name: f.name, cal: f.cal, protein: f.protein, carbs: f.carbs, fat: f.fat });
-    await recomputeStreak();
-    renderAll();
-  }
+  if (error) { alert('Could not add that: ' + error.message); return; }
+  state.todayEntries.push({ id: data.id, name: f.name, cal: f.cal, protein: f.protein, carbs: f.carbs, fat: f.fat });
+  await recomputeStreak();
+  renderAll();
 }
 
 // ============================================
@@ -727,7 +732,7 @@ async function logDbFood(i, filter) {
 let globalLeaderboard = [];
 
 async function loadLeaderboard() {
-  const { data, error } = await sb.rpc('get_leaderboard', { limit_n: 20 });
+  const { data, error } = await sb.rpc('get_leaderboard', { limit_n: 10 });
   globalLeaderboard = error ? [] : data;
 }
 
@@ -737,6 +742,63 @@ async function loadMyGroup() {
   const mine = state.myGroup.find(m => m.user_id === currentUser.id);
   state.linkStreaks = mine ? mine.link_streaks : true;
 }
+
+async function loadPendingInvites() {
+  const { data, error } = await sb.rpc('get_my_pending_invites');
+  state.pendingInvites = error ? [] : data;
+}
+
+function renderPendingInvites() {
+  const panel = document.getElementById('pending-invites-panel');
+  const listEl = document.getElementById('pending-invites-list');
+  if (!state.pendingInvites || !state.pendingInvites.length) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  listEl.innerHTML = state.pendingInvites.map(inv => `
+    <div class="leader-row">
+      <div style="flex:1; font-weight:600; font-size:13.5px;">${escapeHtml(inv.invited_by)} invited you</div>
+      <button class="btn-add btn-secondary" style="width:auto; grid-column:auto; margin:0; padding:8px 14px;" onclick="respondToInvite(${inv.group_id}, true)">Accept</button>
+      <button class="btn-outline" style="width:auto; margin:0 0 0 8px; padding:8px 14px;" onclick="respondToInvite(${inv.group_id}, false)">Decline</button>
+    </div>`).join('');
+}
+
+async function respondToInvite(groupId, accept) {
+  const { error } = await sb.rpc('respond_to_partner_request', { target_group_id: groupId, accept });
+  if (error) { alert('Something went wrong: ' + error.message); return; }
+  await Promise.all([loadPendingInvites(), loadMyGroup()]);
+  renderPendingInvites();
+  renderPartners();
+}
+
+// Type-ahead partner search (case-insensitive, matches anywhere in the name)
+let partnerSearchTimeout = null;
+document.getElementById('partner-username-input').addEventListener('input', (e) => {
+  const query = e.target.value.trim();
+  clearTimeout(partnerSearchTimeout);
+  const dropdown = document.getElementById('partner-search-dropdown');
+  if (!query) { dropdown.classList.remove('show'); dropdown.innerHTML = ''; return; }
+  partnerSearchTimeout = setTimeout(async () => {
+    const { data, error } = await sb.rpc('search_users', { query, limit_n: 8 });
+    if (error || !data || !data.length) { dropdown.classList.remove('show'); dropdown.innerHTML = ''; return; }
+    dropdown.innerHTML = data.map(u => `<div class="search-dropdown-item" data-name="${escapeHtml(u.display_name)}">${escapeHtml(u.display_name)}</div>`).join('');
+    dropdown.classList.add('show');
+    dropdown.querySelectorAll('.search-dropdown-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.getElementById('partner-username-input').value = item.dataset.name;
+        dropdown.classList.remove('show');
+        dropdown.innerHTML = '';
+      });
+    });
+  }, 200);
+});
+document.addEventListener('click', (e) => {
+  const dropdown = document.getElementById('partner-search-dropdown');
+  if (dropdown && !e.target.closest('#partner-search-dropdown') && e.target.id !== 'partner-username-input') {
+    dropdown.classList.remove('show');
+  }
+});
 
 const STAR_ICON = '<svg viewBox="0 0 18 18" fill="currentColor" width="13" height="13"><path d="M9 1.2l2.2 4.7 5.1.6-3.8 3.5.9 5.1L9 12.6l-4.4 2.5.9-5.1L1.7 6.5l5.1-.6z"/></svg>';
 
@@ -796,12 +858,15 @@ async function addPartner() {
   const username = nameEl.value.trim();
   if (!username) return;
   const { data, error } = await sb.rpc('add_accountability_partner', { friend_username: username });
-  if (error) { alert('Something went wrong adding that partner.'); return; }
+  if (error) { alert('Something went wrong sending that invite.'); return; }
   if (data === 'not_found') { alert('User not found.'); return; }
   if (data === 'self') { alert("You can't add yourself."); return; }
   if (data === 'full') { alert('This group already has 4 people — the max.'); return; }
-  if (data === 'already') { alert('That person is already in your group.'); return; }
+  if (data === 'already') { alert('You already have a pending or accepted invite with that person.'); return; }
+  if (data === 'in_other_group') { alert('That person is already in another accountability group.'); return; }
   nameEl.value = '';
+  document.getElementById('partner-search-dropdown').classList.remove('show');
+  alert('Invite sent — they need to accept it before you show up as partners.');
   await loadMyGroup();
   renderPartners();
 }
@@ -1002,11 +1067,10 @@ function renderSavedMeals() {
         user_id: currentUser.id, log_date: todayKey(),
         name: meal.name, calories: meal.cal, protein: meal.protein, carbs: meal.carbs, fat: meal.fat,
       }).select().single();
-      if (!error && data) {
-        state.todayEntries.push({ id: data.id, name: meal.name, cal: meal.cal, protein: meal.protein, carbs: meal.carbs, fat: meal.fat });
-        await recomputeStreak();
-        renderAll();
-      }
+      if (error) { alert('Could not add that: ' + error.message); return; }
+      state.todayEntries.push({ id: data.id, name: meal.name, cal: meal.cal, protein: meal.protein, carbs: meal.carbs, fat: meal.fat });
+      await recomputeStreak();
+      renderAll();
     });
   });
 
@@ -1061,4 +1125,5 @@ function renderAll() {
   renderProgress();
   renderLeaderboard();
   renderPartners();
+  renderPendingInvites();
 }

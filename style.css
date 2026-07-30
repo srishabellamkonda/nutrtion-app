@@ -506,6 +506,18 @@ input, select { font-family: inherit; }
   background: var(--matcha-soft); color: var(--matcha); font-weight: 600; font-size: 12px; margin: 0 6px 6px 0;
 }
 
+.search-dropdown {
+  position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(31,42,30,0.12); z-index: 20; overflow: hidden; display: none;
+}
+.search-dropdown.show { display: block; }
+.search-dropdown-item {
+  padding: 10px 14px; font-size: 13.5px; cursor: pointer; border-top: 1px solid var(--line);
+}
+.search-dropdown-item:first-child { border-top: none; }
+.search-dropdown-item:hover { background: var(--matcha-soft); color: var(--matcha); }
+
 /* progress bar rows (Goals page) */
 .bar-row { margin-bottom: 14px; }
 .bar-row .top { display: flex; justify-content: space-between; font-size: 13px; font-weight: 500; margin-bottom: 5px; }
