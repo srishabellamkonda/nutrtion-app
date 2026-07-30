@@ -864,7 +864,7 @@ function renderPartners() {
       <div style="flex:1; font-weight:600; font-size:13.5px;">${escapeHtml(p.display_name)}</div>
       <div style="font-size:12px; color:var(--ink-soft); font-family:var(--font-mono); margin-right:10px;">🔥 ${p.current_streak}d</div>
       <label style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--ink-soft); margin-right:8px; cursor:pointer;">
-        Linked streaks
+        🔥 Linked streaks
         <button class="toggle partner-link-toggle ${p.link_streaks ? 'on' : ''}" data-partnership-id="${p.partnership_id}" style="width:32px; height:18px;" title="If off, missing your goal won't affect this person's streak (and theirs won't affect yours)">
           <div class="knob" style="width:14px; height:14px;"></div>
         </button>
@@ -897,7 +897,7 @@ async function addPartner() {
   const username = nameEl.value.trim();
   if (!username) return;
   const { data, error } = await sb.rpc('send_partner_request', { friend_username: username });
-  if (error) { alert('Something went wrong sending that request.'); return; }
+  if (error) { alert('Something went wrong sending that request: ' + error.message); console.error('send_partner_request failed:', error); return; }
   if (data === 'not_found') { alert('User not found.'); return; }
   if (data === 'self') { alert("You can't add yourself."); return; }
   if (data === 'full') { alert('You already have 4 accountability partners — the max.'); return; }
