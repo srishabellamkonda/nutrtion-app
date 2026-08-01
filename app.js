@@ -924,6 +924,9 @@ async function loadAdminStats() {
   document.getElementById('admin-total-users').textContent = row.total_users;
   document.getElementById('admin-active-today').textContent = row.active_today;
   document.getElementById('admin-logins-week').textContent = row.logins_this_week;
+  document.getElementById('admin-meals-week').textContent = row.meals_logged_this_week;
+  document.getElementById('admin-active-streaks').textContent = row.users_with_active_streak;
+  document.getElementById('admin-partner-connections').textContent = row.accountability_connections;
 }
 
 // ============================================
